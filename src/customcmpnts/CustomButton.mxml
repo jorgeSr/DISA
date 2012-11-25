@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 currentState="mouseOut" fontWeight="bold"
+		 width.mouseDown="100" height.mouseDown="28" mouseChildren="false">
+	
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			public var _width:int = 100;
+			[Bindable]
+			public var _label:String;
+			[Bindable]
+			public var _active:Boolean;
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="mouseOver"/>
+		<s:State name="mouseOut"/>
+		<s:State name="mouseDown"/>
+	</s:states>	
+	
+	<s:Label left="0" width="{_width}" height="28" color="#FFFFFF" fontWeight="normal" text="{_label}"
+			 textAlign="center" verticalAlign="middle"
+			 backgroundColor.mouseDown="#3E3434" fontWeight.mouseDown="bold"
+			 backgroundAlpha="0.7" backgroundColor.mouseOver="#6E6868"/>
+	
+	<s:Label left="0" width="{_width}" height="2"
+			 backgroundColor="#F62525" visible="{_active}"/>
+</s:Group>

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 currentState="log">
+	
+	<s:transitions> 
+		<s:Transition id="tran" fromState="*" toState="*" > 
+			<s:Sequence id="t1" targets="{[pan]}"> 
+				<mx:Blur duration="100" blurXFrom="0.0" blurXTo="10.0" blurYFrom="0.0" blurYTo="10.0"/>
+				<mx:Parallel>
+					<mx:Move duration="150"/>
+					<mx:Resize duration="150"/>
+				</mx:Parallel>    
+				<mx:Blur duration="100" blurXFrom="10.0" blurXTo="0.0" blurYFrom="10.0" blurYTo="0.0"/> 
+			</s:Sequence> 
+		</s:Transition>
+	</s:transitions>
+	
+	<fx:Metadata> 
+		[Event(name="logIn", type="flash.events.Event")] 
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.idwa.ds.disa.vo.User;
+			import com.idwa.exceptions.ZendExceptios;
+			import com.idwa.utils.GlobalVars;
+			
+			import mx.controls.Alert;
+			import mx.events.ValidationResultEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			protected function login(event:MouseEvent):void
+			{
+				switch( ddLogin.selectedIndex )
+				{
+					case 0: log(); break;
+					case 1: recover(); break;
+				}
+			}
+			
+			protected function log():void
+			{
+				if( tiUs.text == "" || tiPas.text == "" )
+				{
+					Alert.show("Debe ingresar su usuario y contraseña","Alerta");
+					return;
+				}
+				
+				var u:User = new User();
+				u.usuario = tiUs.text;
+				u.password = tiPas.text;
+				
+				enabled = false;
+				rem.logIn(u, GlobalVars.PROJECT_NAME);
+			}
+			
+			protected function recover():void
+			{
+				if( tiUs.text == "" )
+				{
+					Alert.show("Ingrese su usuario o email","Alerta");
+					return;
+				}
+				var u:User = new User();
+				if( tiUs.text.indexOf("@") == -1 )
+				{
+					u.usuario = tiUs.text;
+					u.email = "";
+				}
+				else
+				{
+					u.email = tiUs.text;
+					u.usuario = "";
+				}
+				
+				this.enabled = false;
+				rem.forwardData(u);
+			}
+			
+			protected function ddLogin_changeHandler(event:IndexChangeEvent):void
+			{
+				switch( ddLogin.selectedIndex )
+				{
+					case 0:  currentState = "log"; break;
+					case 1:  currentState = "Rec"; break;
+				}
+			}
+			
+			//RESULTS AND FAULTS HANDLERS
+			protected function login_resultHandler(event:ResultEvent):void
+			{
+				GlobalVars.MULTIPLES_CICLOS = event.result == 1;
+				enabled = true;
+				dispatchEvent(new Event("logIn" ));
+			}
+			
+			protected function reg_resultHandler(event:ResultEvent):void
+			{
+				enabled = true;
+				if( event.result == true )
+				{
+					Alert.show( "Listo, los datos deu su cuenta se han enviado a su email", "Listo" );
+				}
+				else
+				{
+					Alert.show( event.result as String, "Error" );
+				}
+			}
+			
+			protected function myRemote_faultHandler(event:FaultEvent):void
+			{
+				enabled = true;				
+				Alert.show( ( event.fault.faultString == '' ? ZendExceptios.getFaultString( event.fault.faultCode ):event.fault.faultString  ) , "Error" );				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:states>
+		<s:State name="log"/>
+		<s:State name="Rec"/>
+	</s:states>
+	
+	<fx:Declarations>
+		<s:RemoteObject id="rem" destination="zend" source="userC" fault="myRemote_faultHandler(event)" showBusyCursor="true">
+			<s:method name="logIn" result="login_resultHandler(event)"/>
+			<s:method name="forwardData" result="reg_resultHandler(event)"/>
+		</s:RemoteObject>
+	</fx:Declarations>
+	
+	<s:Panel id="pan" x="0" y="0" width="336" height="172" title="LogIn Panel" chromeColor="#B15548" height.Rec="175">
+		<s:TextInput id="tiUs" x="137" y="20" width="160" restrict="[a-z,A-Z,0-9]" restrict.Rec="[a-z,A-Z,0-9,@,_,-]"
+					 x.Rec="64" y.Rec="49" width.Rec="234"/>
+		<s:TextInput id="tiPas" includeIn="log" x="137" y="50" width="160" displayAsPassword="true"
+					 restrict="[a-z,A-Z,0-9]"/>
+		<s:Button x="222" bottom="26" width="75" label="OK" click="login(event)"/>
+		<s:Label x="38" y="30" text="USUARIO"
+				 x.Rec="38" y.Rec="27" text.Rec="Ingrese su EMail o Usuario"/>
+		<s:Label includeIn="log" x="38" y="60" text="PASSWORD"/>
+		
+		<s:DropDownList id="ddLogin" x="38" bottom="26" width="133"
+						change="ddLogin_changeHandler(event)" chromeColor="#DFDEDD"
+						selectedIndex="0">
+			<s:ArrayCollection>
+				<fx:String>LogIn</fx:String>
+				<fx:String>Recuperar Pass</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList>
+	</s:Panel>
+</s:Group>

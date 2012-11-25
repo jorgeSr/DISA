@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"					   
+					   xmlns:log="views.log.*" xmlns:customcmpnts="customcmpnts.*"
+					   creationComplete="initApp(event)" >
+	<fx:Script>
+		<![CDATA[
+			import com.idwa.exceptions.ZendExceptios;
+			import com.idwa.utils.GlobalVars;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			import mx.managers.PopUpManager;
+			
+			import views.categorias.CategoriasCRUD;
+			import views.equipos.EquiposCRUD;
+			import views.sucursales.SucursalesCRUD;
+									
+			
+			protected function initApp(event:FlexEvent):void{				
+				ZendExceptios.appReference = this;
+				GlobalVars.PROJECT_NAME = "DISA";
+			}
+			
+			protected function menuChangeHandler(event:Event):void{
+				stack.selectedIndex = int( event.target.selName );
+				//if( stack.selectedIndex == 1 && usersNC != null ) 
+				//	usersNC.find();
+			}
+			
+			protected function menuWindowHandler(event:Event):void{
+				
+				switch( event.target.selWindow ){
+					
+					case ".1": CategoriasCRUD( PopUpManager.createPopUp( this, CategoriasCRUD, true ) ); break;
+					
+					case ".2": EquiposCRUD( PopUpManager.createPopUp( this, EquiposCRUD, true ) ); break;
+					
+					case ".3": SucursalesCRUD( PopUpManager.createPopUp( this, SucursalesCRUD, true ) ); break;
+					/*
+					case ".0": BancosCRUD( PopUpManager.createPopUp( this, BancosCRUD, true ) ); break;
+					
+					
+					
+					
+					
+					case ".3": ProveedoresCRUD( PopUpManager.createPopUp( this, ProveedoresCRUD, true ) ); break;
+					
+					case ".4": CiclosCRUD( PopUpManager.createPopUp( this, CiclosCRUD, true ) ); break;*/
+				}
+			}					
+			
+			public function logOut():void{
+				//Change State, erase all data
+				//navigateToURL(new URLRequest('../index.php'),'_self');
+			}
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:states>
+		<s:State name="logged"/>
+		<s:State name="logIn"/>
+	</s:states>
+	
+	<log:LogView includeIn="logIn" horizontalCenter="0" verticalCenter="0" logIn="{currentState = 'logged'}"/>
+	
+	<customcmpnts:CustomMenu includeIn="logged" width="100%" 
+						   menuChange="menuChangeHandler(event)"
+						   menuWindow="menuWindowHandler(event)"
+						   logOut="{logOut()}"/>
+	
+	<mx:ViewStack includeIn="logged" top="25" bottom="0" width="100%" id="stack">
+		
+		<s:NavigatorContent width="100%" height="100%" label="solicitudes" >		
+			<s:Scroller width="100%" height="100%">
+				<!-- <solicitudes:SolicitudesView width="100%" height="100%" /> -->
+			</s:Scroller>
+		</s:NavigatorContent>		
+		
+		<s:NavigatorContent width="100%" height="100%" label="usuarios">			
+			<!-- <users:UsersView id="usersNC" width="100%" height="100%" /> -->
+		</s:NavigatorContent>		
+		
+	</mx:ViewStack>
+	
+	<s:Label includeIn="logIn" top="10" horizontalCenter="0" text="{GlobalVars.PROJECT_NAME}"/>
+	
+</s:WindowedApplication>

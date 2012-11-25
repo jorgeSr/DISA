@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="800" height="466" close="PopUpManager.removePopUp(this);"
+			   creationComplete="creationCompleteHandler(event)" title="Categorias"
+			   height.CU="420">
+	
+	<s:transitions> 
+		<s:Transition id="tran" fromState="*" toState="*" > 
+			<s:Sequence id="t1" targets="{[detalle, categorias, filtro]}"> 
+				<mx:Blur duration="100" blurXFrom="0.0" blurXTo="10.0" />
+				<mx:Parallel>
+					<mx:Move duration="150"/>
+					<mx:Resize duration="150"/>
+				</mx:Parallel>    
+				<mx:Blur duration="100" blurXFrom="10.0" blurXTo="0.0" /> 
+			</s:Sequence> 
+		</s:Transition>
+	</s:transitions>
+	
+	<fx:Script>
+		
+		<![CDATA[
+			import com.idwa.ds.disa.vo.Categoria;
+			import com.idwa.exceptions.ZendExceptios;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			[Bindable]
+			public var selMode:Boolean = false;
+			[Bindable]
+			public var categoria:Categoria = new Categoria();
+			
+			public var createUpdate:int = 0; //0:default, 1:create, 2:update
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				PopUpManager.centerPopUp(this);
+				rem.findAll();
+			}
+			
+			protected function confirmDeleteCliente():void
+			{
+				Alert.show("Realmente desea eliminar este Registro?",
+					"CONFIRMAR ELIMINAR!",
+					Alert.OK|Alert.CANCEL,this, 
+					function(event:CloseEvent):void{
+						if(event.detail==Alert.OK)	
+							rem.remove( categorias.selectedItem.id );
+					},null,Alert.OK);
+			}
+			
+			protected function myRemote_faultHandler(event:FaultEvent):void
+			{				
+				enabled = true;
+				Alert.show( ( event.fault.faultString == '' ? ZendExceptios.getFaultString( event.fault.faultCode ):event.fault.faultString  ) , "Error" );
+			}
+			
+			protected function createUpdateHandler(nuevo:Boolean):void
+			{
+				currentState = "CU";
+				
+				if( nuevo ){
+					
+					categoria = new Categoria();
+					guardar.label = "CREAR";
+					createUpdate = 1;
+					
+				}else{
+					
+					categoria = categorias.selectedItem as Categoria;				
+					guardar.label = "EDITAR";
+					createUpdate = 2;
+				}
+			}
+			
+			protected function process(event:MouseEvent):void
+			{
+				
+				if( descripcionTi.text == "" ){
+					
+					Alert.show("Los campos marcados con * son obligatorios","Error");
+					return;
+				}
+					
+				categoria.descripcion = descripcionTi.text;		
+				
+				if( createUpdate == 1 )	
+					rem.create( categoria );										
+				else					
+					rem.update( categoria );
+				
+			}
+			
+			protected function cancel(event:MouseEvent):void
+			{
+				currentState = "options";
+				createUpdate = 0;
+			}
+			
+			protected function findAllHandler(event:ResultEvent):void
+			{
+				enabled = true;
+				dp = new ArrayCollection( event.result as Array );
+				dp.filterFunction = provFilter;
+				dp.refresh();
+			}
+			
+			protected function rcuHandler(event:ResultEvent):void
+			{
+				enabled = true;								
+				
+				currentState = 'options';				
+				descripcionTi.text = '';
+				editarBtn.enabled = removeBtn.enabled = selbtn.enabled = false;
+				Alert.show( 'Se realizaron los cambios correctamente',"Alerta");
+				rem.findAll();
+			}
+			
+			private function provFilter(item:Object):Boolean
+			{
+				if( filtro.text == "" )
+					return true;
+				return item.descripcion.toLowerCase().indexOf( filtro.text.toLowerCase() ) != -1;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="options"/>
+		<s:State name="CU"/>
+	</s:states>
+	
+	<fx:Declarations>
+		<s:RemoteObject id="rem" destination="zend" source="categoriaC" 
+						fault="myRemote_faultHandler(event)" showBusyCursor="true"
+						invoke="enabled=false;">
+			
+			<s:method name="findAll" result="findAllHandler(event)"/>
+			<s:method name="remove" result="rcuHandler(event)" />
+			<s:method name="create" result="rcuHandler(event)" />
+			<s:method name="update" result="rcuHandler(event)" />
+		</s:RemoteObject>
+		
+		<s:ArrayCollection id="dp" />
+	</fx:Declarations>
+
+	<s:TextInput id="filtro" y="12" left="10" right="284" enabled="{currentState != 'CU'}"
+				 prompt="Filtro: Rason Social" change="{dp.refresh()}"
+				 left.CU="10" right.CU="450"/>
+	
+	<s:DataGrid id="categorias" x="10" y="42" width="310" height="333" dataProvider="{dp}"
+				enabled="{ currentState != 'CU' }" requestedRowCount="4"
+				width.CU="338"
+				width.options="504">
+		
+		<s:columns>
+			<s:ArrayList>
+				<s:GridColumn dataField="id" headerText="ID" width="60"></s:GridColumn>
+				<s:GridColumn dataField="descripcion" headerText="Descripcion"></s:GridColumn>
+			</s:ArrayList>
+		</s:columns>
+	</s:DataGrid>
+	
+	<s:Button includeIn="options" x="9" y="388" width="98" height="36" label="Nuevo"
+			  chromeColor="#95C3EA" click="createUpdateHandler(true)"
+			  icon="@Embed('assets/nuevo.png')"/>
+	
+	<s:Button id="editarBtn" includeIn="options" x="115" y="388" width="98" height="36"
+			  label="Editar" chromeColor="#EAE195" click="createUpdateHandler(false)"
+			  enabled="{categorias.selectedIndex != -1}"
+			  icon="@Embed('assets/editar.png')"/>
+	
+	<s:Button id="removeBtn" includeIn="options" x="221" y="388" width="108" height="36"
+			  label="Eliminar" chromeColor="#E67373" click="confirmDeleteCliente()"
+			  enabled="{categorias.selectedIndex != -1}"
+			  icon="@Embed('assets/eliminar.png')"/>
+	
+	<s:Button id="selbtn" includeIn="options" y="387" right="10" width="98" height="36"
+			  label="Seleccionar" chromeColor="#F6F7F7"
+			  click="{dispatchEvent( new Event('itemSelected') )}"
+			  enabled="{selMode &amp;&amp; categorias.selectedIndex != -1}"/>		
+	
+	<s:Group id="detalle" x="328" y="10" width="266" height="365"
+			 enabled="{ categorias.selectedIndex != -1 || currentState == 'CU' }"
+			 x.CU="356" y.CU="12" width.CU="432"
+			 x.options="522" y.options="10">
+		
+		<s:Label x="10" y="10" text="Descripcion"/>
+		
+		<s:TextInput id="descripcionTi" y="29" left="10" right="10"
+					 prompt.CU="*" text.CU="{ categoria.descripcion }"
+					 text.options="{categorias.selectedItem.descripcion}"/>
+		
+		<s:Image y="59" left="10" right="10" 
+				 y.CU="59" left.CU="10" right.CU="10" height.CU="258"
+				 left.options="10" right.options="10" height.options="296"
+				 backgroundColor="#E8E8E8"
+				 source.CU="{ categoria.fotoUrl }"
+				 clearOnLoad="true"
+				 source.options="{ categorias.selectedItem.fotoUrl }"/>		
+		
+		<s:Button id="guardar" includeIn="CU" y="325" right="10" width="98" height="30"
+				  chromeColor="#95EAC7" click="process(event)" fontWeight="bold"/>
+		
+		<s:Button id="cancelar" includeIn="CU" x="10" y="325" width="98" height="30" label="Cancelar"
+				  chromeColor="#EAE195" click="cancel(event)"/>
+		
+	</s:Group>		
+	
+</s:TitleWindow>

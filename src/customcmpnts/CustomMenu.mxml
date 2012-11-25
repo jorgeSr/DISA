@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" 
+          xmlns:custommenu="views.custommenu.*" xmlns:customcmpnts="customcmpnts.*">
+	
+	<fx:Metadata>
+		[Event(name="menuWindow", type="flash.events.Event")] 
+		[Event(name="menuChange", type="flash.events.Event")] 
+		[Event(name="logOut", type="flash.events.Event")] 
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.idwa.utils.GlobalVars;
+			
+			public var selWindow:String = ".0";
+			public var selName:String = "0";
+			
+			protected function hbox1_mouseHandler(event:MouseEvent):void{
+				
+				event.target.currentState = event.type;
+			}
+			
+			protected function clickHandler(event:MouseEvent):void{									
+				
+				if( event.target.name.indexOf(".") == -1 ){
+					//open in stack
+					Object( buttons.getChildByName( selName ) )._active = false;
+					event.target._active = true;
+					selName = event.target.name;
+					dispatchEvent( new Event('menuChange') );
+					
+				}else{ 
+					//open in titleWindow
+					selWindow = event.target.name;
+					dispatchEvent( new Event('menuWindow') );
+				}
+								
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Label left="0" width="100%" height="28" backgroundColor="#2B2828" color="#FFFFFF"/>
+	
+	
+	<customcmpnts:CustomButton id="salir" right="0" _label="{GlobalVars.PROJECT_NAME+'::Salir'}" name="4"
+							 mouseOver="salir.currentState = 'mouseOver'"
+							 mouseOut="salir.currentState = 'mouseOut'" 
+							 mouseDown="salir.currentState = 'mouseDown'"
+							 click="{dispatchEvent( new Event('logOut') )}"/>
+	
+	<mx:HBox id="buttons" mouseOver="hbox1_mouseHandler(event)" 
+			 mouseOut="hbox1_mouseHandler(event)" 
+			 mouseDown="hbox1_mouseHandler(event)"
+			 click="clickHandler(event)"
+			 horizontalGap="0">
+		
+		<customcmpnts:CustomButton _label="Servicios" name="0" _active="true"/>
+		<customcmpnts:CustomButton _label="Categorias" name=".1" />		
+		<customcmpnts:CustomButton _label="Equipos" name=".2" />
+		<customcmpnts:CustomButton _label="Sucursales" name=".3" />					
+		<customcmpnts:CustomButton _width="150" _label="Usuarios y Clientes" name=".4" />
+		
+	</mx:HBox>
+	
+</s:Group>
