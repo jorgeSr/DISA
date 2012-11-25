@@ -107,7 +107,9 @@
 			protected function process(event:MouseEvent):void
 			{
 				
-				if( descripcionTi.text == "" ){
+				if( descripcionTi.text == "" || marcaTi.text == "" || 
+					modeloTi.text == "" || serieTi.text == "" ||
+					categoriaTi.text == "" || fechaCompraDC.selectedDate == null ){
 					
 					Alert.show("Los campos marcados con * son obligatorios","Error");
 					return;
@@ -276,17 +278,18 @@
 	<s:Group id="detalle" includeIn="CU" x="356" y="12" width="432" height="365"
 			 enabled="{ equipos.selectedIndex != -1 || currentState == 'CU' }">
 
-		<s:Label y="15" left="220" fontWeight="bold" text="Fecha de Compra"/>
+		<s:Label y="15" left="215" fontWeight="bold" text="Fecha de Compra *"/>
 		<mx:DateField id="fechaCompraDC" x="329" y="10" dayNames="{DateUtil.dayNames}"
 					  formatString="YYYY-MM-DD" monthNames="{DateUtil.monthNames}"
 					  selectedDate="{ equipo.fechaCompra }"/>
-		<s:TextInput id="descripcionTi" y="46" left="88" right="10" text="{ equipo.descripcion }"/>
-		<s:TextInput id="marcaTi" y="76" left="88" right="10" text="{ equipo.marca }"/>
-		<s:TextInput id="modeloTi" y="106" left="88" right="10" text="{ equipo.modelo }"/>
-		<s:TextInput id="serieTi" y="136" left="88" right="10" text="{ equipo.serie }"
-					 editable="{ nuevo }" enabled="{nuevo}" />
+		<s:TextInput id="descripcionTi" y="46" left="88" right="10" prompt="*"
+					 text="{ equipo.descripcion }"/>
+		<s:TextInput id="marcaTi" y="76" left="88" right="10" prompt="*" text="{ equipo.marca }"/>
+		<s:TextInput id="modeloTi" y="106" left="88" right="10" prompt="*" text="{ equipo.modelo }"/>
+		<s:TextInput id="serieTi" y="136" left="88" right="10" editable="{ nuevo }" enabled="{nuevo}"
+					 prompt="*" text="{ equipo.serie }"/>
 		<s:TextInput id="categoriaTi" y="166" left="88" right="10" click="catBTi_clickHandler(event)"
-					 contentBackgroundColor="#D8F7FF" editable="false" />
+					 contentBackgroundColor="#D8F7FF" editable="false" prompt="*"/>
 		<s:Label y="175" left="10" fontWeight="bold" text="Categoria"/>
 		<s:Label y="141" left="10" fontWeight="bold" text="Serie"/>
 		<s:Label y="111" left="10" fontWeight="bold" text="Modelo"/>
