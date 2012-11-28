@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="800" height="466" close="PopUpManager.removePopUp(this);"
+			   creationComplete="creationCompleteHandler(event)" currentState="findResult"
+			   title="Clientes"
+			   height.CU="420"
+			   width.findResult="928" height.findResult="572"
+			   width.options="928" height.options="572">
+	
+	<s:transitions> 
+		<s:Transition id="tran" fromState="*" toState="*" > 
+			<s:Sequence id="t1" targets="{[detalle, clientes, filtro]}"> 
+				<mx:Blur duration="100" blurXFrom="0.0" blurXTo="10.0" />
+				<mx:Parallel>
+					<mx:Move duration="150"/>
+					<mx:Resize duration="150"/>
+				</mx:Parallel>    
+				<mx:Blur duration="100" blurXFrom="10.0" blurXTo="0.0" /> 
+			</s:Sequence> 
+		</s:Transition>
+	</s:transitions>
+	
+	<fx:Script>
+		
+		<![CDATA[			
+			import com.idwa.ds.disa.vo.User;
+			import com.idwa.exceptions.ZendExceptios;
+			import com.idwa.utils.DateUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.IFlexDisplayObject;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import views.categorias.CategoriasCRUD;
+			
+			[Bindable]
+			public var selMode:Boolean = false;
+			[Bindable]
+			private var cliente:User = new User();
+			[Bindable]
+			private var clienteSearch:User = new User();
+			[Bindable]
+			private var nuevo:Boolean;
+			private var deleteCalled:Boolean;
+			public var createUpdate:int = 0; //0:default, 1:create, 2:update			
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				PopUpManager.centerPopUp(this);
+			}
+			
+			protected function confirmDeleteCliente():void
+			{
+				Alert.show("Realmente desea eliminar este Registro?",
+					"CONFIRMAR ELIMINAR!",
+					Alert.OK|Alert.CANCEL,this, 
+					function(event:CloseEvent):void{
+						if(event.detail==Alert.OK){
+						
+							deleteCalled = true;
+							remC.remove( clientes.selectedItem.id );
+						}							
+					},null,Alert.OK);
+			}
+			
+			protected function myRemote_faultHandler(event:FaultEvent):void
+			{				
+				deleteCalled = false;
+				enabled = true;
+				Alert.show( ( event.fault.faultString == '' ? ZendExceptios.getFaultString( event.fault.faultCode ):event.fault.faultString  ) , "Error" );
+			}
+			
+			protected function createUpdateHandler(nuevo:Boolean):void
+			{
+				this.nuevo = nuevo;
+				currentState = "CU";
+				
+				if( nuevo ){
+					
+					cliente = new User();
+					guardar.label = "CREAR";
+					createUpdate = 1;
+					
+				}else{
+								
+					cliente = clientes.selectedItem as User;						
+					guardar.label = "EDITAR";
+					createUpdate = 2;
+				}
+			}
+			
+			protected function process(event:MouseEvent):void
+			{
+				/*
+				if( descripcionTi.text == "" || marcaTi.text == "" || 
+					modeloTi.text == "" || serieTi.text == "" ){
+					
+					Alert.show("Los campos marcados con * son obligatorios","Error");
+					return;
+				}*/
+				
+				/*equipo.descripcion = descripcionTi.text;
+				equipo.fechaCompra = fechaCompraDC.selectedDate;
+				equipo.marca = marcaTi.text;
+				equipo.modelo = modeloTi.text;
+				equipo.serie = serieTi.text;*/
+				
+				if( createUpdate == 1 )	
+					remC.create( cliente );										
+				else					
+					remC.update( cliente );
+				
+			}
+			
+			protected function cancel(event:MouseEvent):void
+			{
+				currentState = "options";
+				createUpdate = 0;
+			}
+			
+			protected function searchHandler(event:ResultEvent):void
+			{
+				enabled = true;
+				currentState = "options";
+				dp = new ArrayCollection( event.result as Array );
+				dp.filterFunction = provFilter;
+				dp.refresh();
+			}
+			
+			protected function rcuHandler(event:ResultEvent):void
+			{
+				enabled = true;				
+				currentState = 'options';				
+				editarBtn.enabled = removeBtn.enabled = selbtn.enabled = false;
+				Alert.show( 'Se realizaron los cambios correctamente',"Alerta");
+				//If call delete, not search, only delete item
+				if( deleteCalled )
+				{				
+					deleteCalled = false;
+					clientes.dataProvider.removeItemAt( clientes.selectedIndex );
+					return;
+				}
+				remC.search( cliente );
+			}
+			
+			private function provFilter(item:Object):Boolean
+			{
+				if( filtro.text == "" )
+					return true;
+				return item.nombre.toLowerCase().indexOf( filtro.text.toLowerCase() ) != -1;
+			}
+			
+			protected function goToFindState():void
+			{
+				currentState = "findResult";
+			}
+			
+			protected function busqueda_clickHandler(event:MouseEvent):void
+			{											
+				/*equipoSearch.descripcion = descBTi.text;				
+				equipoSearch.marca = marcaBTi.text;
+				equipoSearch.modelo = modeloBTi.text;
+				equipoSearch.serie = serieBTi.text;*/
+				remC.search( clienteSearch );
+			}
+			
+			/**
+			 * Clean search
+			 * */
+			protected function limpiar_clickHandler(event:MouseEvent):void
+			{
+				clienteSearch = new User();
+				descBTi.text = marcaBTi.text = modeloBTi.text = serieBTi.text = "";
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="findResult"/>
+		<s:State name="CU"/>
+		<s:State name="options"/>
+	</s:states>
+	
+	<fx:Declarations>
+		<s:RemoteObject id="remC" destination="zend" source="userC" 
+						fault="myRemote_faultHandler(event)" showBusyCursor="true"
+						invoke="enabled=false;">
+			
+			<s:method name="search" result="searchHandler(event)"/>
+			<s:method name="remove" result="rcuHandler(event)" />
+			<s:method name="create" result="rcuHandler(event)" />
+			<s:method name="update" result="rcuHandler(event)" />
+		</s:RemoteObject>
+		
+		<s:ArrayCollection id="dp" />
+		
+		<s:ArrayCollection id="tipos" >
+			<fx:Object name="Administrador" value="0" />
+			<fx:Object name="Mostrador" value="1" />
+			<fx:Object name="Tecnico" value="2" />
+			<fx:Object name="Calidad" value="3" />
+			<fx:Object name="Usuario" value="4" />
+			<fx:Object name="Todos" value="-1" />
+		</s:ArrayCollection>						
+	</fx:Declarations>
+
+	<s:TextInput id="filtro" includeIn="CU,options" width="221" change="{dp.refresh()}"
+				 enabled="{currentState != 'CU'}" prompt="Filtro: Serie"
+				 x.CU="10" y.CU="12" width.CU="338"
+				 x.options="695" y.options="10" prompt.options="Filtro: Nombre"/>
+	
+	<s:DataGrid id="clientes" x="10" width="310" dataProvider="{dp}"
+				enabled="{ currentState != 'CU' }" requestedRowCount="4"
+				y.CU="42" width.CU="338" height.CU="333"
+				y.findResult="10" width.findResult="656" height.findResult="475"
+				y.options="40" width.options="906" height.options="445">
+		
+		<s:columns>
+			<s:ArrayList>
+				<s:GridColumn dataField="id" headerText="ID"></s:GridColumn>
+				<s:GridColumn dataField="usuario" headerText="Usuario"></s:GridColumn>
+				<s:GridColumn dataField="nombre" headerText="Nombre"></s:GridColumn>
+				<s:GridColumn dataField="apellidos" headerText="Apellidos"></s:GridColumn>
+				<s:GridColumn dataField="email" headerText="E-Mail"></s:GridColumn>
+			</s:ArrayList>
+		</s:columns>
+	</s:DataGrid>
+	
+	<s:Button includeIn="findResult,options" left="10" bottom="10" width="98" height="36" label="Nuevo"
+			  chromeColor="#95C3EA" click="createUpdateHandler(true)"
+			  icon="@Embed('assets/nuevo.png')"/>
+	
+	<s:Button id="editarBtn" includeIn="findResult,options" left="116" bottom="10" width="98" height="36"
+			  label="Editar" chromeColor="#EAE195" click="createUpdateHandler(false)"
+			  enabled="{clientes.selectedIndex != -1}" icon="@Embed('assets/editar.png')"/>
+	
+	<s:Button id="removeBtn" includeIn="findResult,options" left="222" bottom="10" width="108" height="36"
+			  label="Eliminar" chromeColor="#E67373" click="confirmDeleteCliente()"
+			  enabled="{clientes.selectedIndex != -1}" icon="@Embed('assets/eliminar.png')"/>
+	
+	<s:Button id="selbtn" includeIn="findResult,options" right="10" bottom="10" width="98" height="36"
+			  label="Seleccionar" chromeColor="#F6F7F7"
+			  click="{dispatchEvent( new Event('itemSelected') )}"
+			  enabled="{selMode &amp;&amp; clientes.selectedIndex != -1}"/>		
+	
+	<s:Group id="detalle" includeIn="CU" x="356" y="12" width="432" height="365"
+			 enabled="{ clientes.selectedIndex != -1 || currentState == 'CU' }">
+<!--		
+		<s:TextInput id="descripcionTi" y="10" left="88" right="10" prompt="*"
+					 text="{ cliente.descripcion }"/>
+		<s:TextInput id="marcaTi" y="40" left="88" right="10" prompt="*" text="{ cliente.marca }"/>
+		<s:TextInput id="modeloTi" y="70" left="88" right="10" prompt="*" text="{ cliente.modelo }"/>
+		<s:TextInput id="serieTi" y="100" left="88" right="10" editable="{ nuevo }" enabled="{nuevo}"
+					 prompt="*" text="{ cliente.serie }"/>-->		
+		<s:DropDownList id="tipoDD" y="130" left="88" right="10" dataProvider="{ tipos }" selectedIndex="4" />
+		<s:Label y="139" left="10" fontWeight="bold" text="Categoria"/>
+		<s:Label y="105" left="10" fontWeight="bold" text="Nombre"/>
+		<s:Label y="75" left="10" fontWeight="bold" text="Password"/>
+		<s:Label y="45" left="10" fontWeight="bold" text="Password"/>
+		<s:Label y="15" left="11" fontWeight="bold" text="Usuario"/>	
+		
+		<s:Button id="guardar" y="325" right="10" width="98" height="30" chromeColor="#95EAC7"
+				  click="process(event)" fontWeight="bold"/>
+		
+		<s:Button id="cancelar" x="10" y="325" width="98" height="30" label="Cancelar"
+				  chromeColor="#EAE195" click="cancel(event)"/>
+		
+	</s:Group>	
+	
+	<s:Group includeIn="findResult" x="674" y="10" width="242" height="475">
+		<s:TextInput id="descBTi" y="27" left="10" right="10"/>
+		<s:TextInput id="marcaBTi" y="78" left="10" right="10"/>
+		<s:TextInput id="modeloBTi" y="124" left="10" right="10"/>
+		<s:TextInput id="serieBTi" y="175" left="10" right="10"/>
+		<s:DropDownList id="tipoBdd" y="221" left="10" right="10" labelField="name" selectedIndex="4" dataProvider="{ tipos }" />		
+		<s:Label y="11" left="10" fontWeight="bold" text="Usuario"/>
+		<s:Label y="205" left="10" fontWeight="bold" text="Tipo"/>
+		<s:Label y="159" left="10" fontWeight="bold" text="E-Mail"/>
+		<s:Label y="108" left="10" fontWeight="bold" text="Apellidos"/>
+		<s:Label y="62" left="10" fontWeight="bold" text="Nombre"/>
+		<s:Button x="114" y="281" height="22" label="&lt;&lt; Buscar" chromeColor="#F7F7F7"
+				  icon="@Embed('assets/buscar.png')" click="busqueda_clickHandler(event)"/>
+		<s:Button id="limpiar" x="10" y="271" width="30" height="30" label="Cancelar"
+				  chromeColor="#EAE195" icon="@Embed('assets/eliminar.png')" toolTip="Limpiar Filtro"
+				  click="limpiar_clickHandler(event)"/>
+	</s:Group>
+	 
+	<s:Button includeIn="options" x="10" y="10" height="22" label="Buscar &gt;&gt;" chromeColor="#F7F7F7"
+			  click="goToFindState()" icon="@Embed('assets/buscar.png')"/>
+	
+</s:TitleWindow>
