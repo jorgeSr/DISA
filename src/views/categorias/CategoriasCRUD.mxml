@@ -24,6 +24,7 @@
 		<![CDATA[
 			import com.idwa.ds.disa.vo.Categoria;
 			import com.idwa.exceptions.ZendExceptios;
+			import com.idwa.utils.GlobalVars;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
@@ -32,7 +33,7 @@
 			import mx.managers.PopUpManager;
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
-			
+						
 			[Bindable]
 			public var selMode:Boolean = false;
 			[Bindable]
@@ -93,9 +94,9 @@
 				categoria.descripcion = descripcionTi.text;		
 				
 				if( createUpdate == 1 )	
-					rem.create( categoria );										
+					rem.create( categoria, img.source );										
 				else					
-					rem.update( categoria );
+					rem.update( categoria, img.source );
 				
 			}
 			
@@ -131,6 +132,31 @@
 				return item.descripcion.toLowerCase().indexOf( filtro.text.toLowerCase() ) != -1;
 			}
 			
+			
+			protected function loadImage():void
+			{			
+				var file:FileReference = new FileReference();
+				var arr:Array = [];
+				arr.push(new FileFilter("Images", "*.jpg;*.JPG"));
+				
+				file.addEventListener(Event.CANCEL, function(event:Event):void{
+					
+					img.source = null;				
+					enabled = true;
+				});
+				file.addEventListener(Event.SELECT,  function(event:Event):void{
+					
+					event.target.load();	
+				});
+				file.addEventListener(Event.COMPLETE, function(event:Event):void{
+					
+					img.source = event.target.data;					
+					enabled = true;	
+				});
+				
+				enabled = false;
+				file.browse(arr);
+			}
 		]]>
 	</fx:Script>
 	
@@ -200,19 +226,19 @@
 					 prompt.CU="*" text.CU="{ categoria.descripcion }"
 					 text.options="{categorias.selectedItem.descripcion}"/>
 		
-		<s:Image y="59" left="10" right="10" 
-				 y.CU="59" left.CU="10" right.CU="10" height.CU="258"
+		<s:Image id="img" y="59" left="10" right="10" backgroundColor="#E8E8E8" clearOnLoad="true"
+				 y.CU="90" left.CU="10" right.CU="10" height.CU="227"
+				 source.CU="{ categoria.fotoUrl != null ? GlobalVars.BASE_URL + '/files/' + categoria.fotoUrl:null }"
 				 left.options="10" right.options="10" height.options="296"
-				 backgroundColor="#E8E8E8"
-				 source.CU="{ categoria.fotoUrl }"
-				 clearOnLoad="true"
-				 source.options="{ categorias.selectedItem.fotoUrl }"/>		
+				 source.options="{ categorias.selectedItem.fotoUrl != null ? GlobalVars.BASE_URL + '/files/' + categorias.selectedItem.fotoUrl:null }"/>		
 		
 		<s:Button id="guardar" includeIn="CU" y="325" right="10" width="98" height="30"
 				  chromeColor="#95EAC7" click="process(event)" fontWeight="bold"/>
 		
 		<s:Button id="cancelar" includeIn="CU" x="10" y="325" width="98" height="30" label="Cancelar"
 				  chromeColor="#EAE195" click="cancel(event)"/>
+		<s:Button includeIn="CU" x="10" y="61" label="Elegir Imagen" click="loadImage()"/>
+		<s:Label includeIn="CU" x="110" y="70" text="file..."/>
 		
 	</s:Group>		
 	
