@@ -141,6 +141,7 @@
 				dp = new ArrayCollection( event.result as Array );
 				dp.filterFunction = provFilter;
 				dp.refresh();
+				editarBtn.enabled = removeBtn.enabled = selbtn.enabled = false;
 			}
 			
 			protected function rcuHandler(event:ResultEvent):void

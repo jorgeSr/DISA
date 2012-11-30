@@ -79,6 +79,7 @@
 				enabled = true;
 				dp = new ArrayCollection( event.result as Array );
 				dp.refresh();
+				editarBtn.enabled = removeBtn.enabled = selbtn.enabled = false;
 			}
 			
 			protected function confirmDeleteCliente():void
