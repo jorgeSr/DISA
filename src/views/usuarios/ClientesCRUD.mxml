@@ -5,7 +5,7 @@
 			   width="800" height="466" close="PopUpManager.removePopUp(this);"
 			   creationComplete="creationCompleteHandler(event)" currentState="findResult"
 			   title="Clientes"
-			   height.CU="420"
+			   height.CU="572"
 			   width.findResult="928" height.findResult="572"
 			   width.options="928" height.options="572">
 	
@@ -98,25 +98,62 @@
 			
 			protected function process(event:MouseEvent):void
 			{
-				/*
-				if( descripcionTi.text == "" || marcaTi.text == "" || 
-					modeloTi.text == "" || serieTi.text == "" ){
-					
-					Alert.show("Los campos marcados con * son obligatorios","Error");
-					return;
-				}*/
+				if( !verify() ) return;
 				
-				/*equipo.descripcion = descripcionTi.text;
-				equipo.fechaCompra = fechaCompraDC.selectedDate;
-				equipo.marca = marcaTi.text;
-				equipo.modelo = modeloTi.text;
-				equipo.serie = serieTi.text;*/
+				cliente.active = activeCB.selected;
+				cliente.apellidos = apellidosTi.text;
+				cliente.celular = celularTi.text;
+				cliente.ciudad = ciudadTi.text;
+				cliente.direccion = direccionTi.text;
+				cliente.email = emailTi.text;
+				cliente.estado = estadoTi.text;
+				cliente.nombre = nombreTi.text;
+				cliente.password = passTi.text;
+				cliente.telefono = telefonoTi.text;
+				cliente.tipo = tipoDD.selectedIndex;
+				cliente.usuario = usuarioTi.text;
 				
 				if( createUpdate == 1 )	
 					remC.create( cliente );										
 				else					
 					remC.update( cliente );
 				
+			}
+			
+			protected function verify():Boolean
+			{			
+				if( nombreTi.text == "" || apellidosTi.text == "" )
+				{
+					Alert.show("Los campos marcados con * son necesarios", "Error");
+					return false;
+				}
+				
+				if( passTi.text != passRepeatTi.text )
+				{
+					Alert.show("Los passwords no coinciden", "Error");
+					return false;
+				}
+				
+				if( activeCB.selected || tipoDD.selectedIndex != 4 )
+				{
+					if( usuarioTi.text == "" || passTi.text == "" || passRepeatTi.text == "" || emailTi.text == "" )
+					{
+						Alert.show("Los campos marcados con * son necesarios", "Error");
+						return false;
+					}
+				}
+				
+				if( tipoDD.selectedIndex == 4 )
+				{
+					if( direccionTi.text == "" || telefonoTi.text == "" || celularTi.text == "" 
+						|| ciudadTi.text == ""|| estadoTi.text == "" )
+					{
+						Alert.show("Los campos marcados con * son necesarios", "Error");
+						return false;
+					}				
+				}
+				
+				return true;			
 			}
 			
 			protected function cancel(event:MouseEvent):void
@@ -164,10 +201,13 @@
 			
 			protected function busqueda_clickHandler(event:MouseEvent):void
 			{											
-				/*equipoSearch.descripcion = descBTi.text;				
-				equipoSearch.marca = marcaBTi.text;
-				equipoSearch.modelo = modeloBTi.text;
-				equipoSearch.serie = serieBTi.text;*/
+				clienteSearch.usuario = userBTi.text; 
+				clienteSearch.nombre = nombreBTi.text;
+				clienteSearch.apellidos = apellidosBTi.text;
+				clienteSearch.email = emailBTi.text;
+				clienteSearch.tipo = int(tipoBdd.selectedItem.value);
+				clienteSearch.active = activeBCB.selected;
+				
 				remC.search( clienteSearch );
 			}
 			
@@ -177,7 +217,17 @@
 			protected function limpiar_clickHandler(event:MouseEvent):void
 			{
 				clienteSearch = new User();
-				descBTi.text = marcaBTi.text = modeloBTi.text = serieBTi.text = "";
+				userBTi.text = nombreBTi.text = apellidosBTi.text = emailBTi.text = "";
+			}
+			
+			protected function getTipo(item:Object, column:GridColumn):String
+			{
+				return tiposCrt[ item.tipo ].name;
+			}
+			
+			protected function getActivo(item:Object, column:GridColumn):String
+			{
+				return item.active ? "Si":"No";
 			}
 			
 		]]>
@@ -207,9 +257,17 @@
 			<fx:Object name="Mostrador" value="1" />
 			<fx:Object name="Tecnico" value="2" />
 			<fx:Object name="Calidad" value="3" />
-			<fx:Object name="Usuario" value="4" />
+			<fx:Object name="Cliente" value="4" />
 			<fx:Object name="Todos" value="-1" />
-		</s:ArrayCollection>						
+		</s:ArrayCollection>	
+		
+		<s:ArrayCollection id="tiposCrt" >
+			<fx:Object name="Administrador" value="0" />
+			<fx:Object name="Mostrador" value="1" />
+			<fx:Object name="Tecnico" value="2" />
+			<fx:Object name="Calidad" value="3" />
+			<fx:Object name="Cliente" value="4" />
+		</s:ArrayCollection>	
 	</fx:Declarations>
 
 	<s:TextInput id="filtro" includeIn="CU,options" width="221" change="{dp.refresh()}"
@@ -219,7 +277,7 @@
 	
 	<s:DataGrid id="clientes" x="10" width="310" dataProvider="{dp}"
 				enabled="{ currentState != 'CU' }" requestedRowCount="4"
-				y.CU="42" width.CU="338" height.CU="333"
+				y.CU="42" width.CU="338" height.CU="487"
 				y.findResult="10" width.findResult="656" height.findResult="475"
 				y.options="40" width.options="906" height.options="445">
 		
@@ -230,6 +288,8 @@
 				<s:GridColumn dataField="nombre" headerText="Nombre"></s:GridColumn>
 				<s:GridColumn dataField="apellidos" headerText="Apellidos"></s:GridColumn>
 				<s:GridColumn dataField="email" headerText="E-Mail"></s:GridColumn>
+				<s:GridColumn dataField="tipo" headerText="Tipo" labelFunction="getTipo" ></s:GridColumn>
+				<s:GridColumn dataField="active" headerText="Tipo" labelFunction="getActivo" width="50" ></s:GridColumn>
 			</s:ArrayList>
 		</s:columns>
 	</s:DataGrid>
@@ -251,46 +311,68 @@
 			  click="{dispatchEvent( new Event('itemSelected') )}"
 			  enabled="{selMode &amp;&amp; clientes.selectedIndex != -1}"/>		
 	
-	<s:Group id="detalle" includeIn="CU" x="356" y="12" width="432" height="365"
+	<s:Group id="detalle" includeIn="CU" x="356" y="12" width="432" height="517"
 			 enabled="{ clientes.selectedIndex != -1 || currentState == 'CU' }">
-<!--		
-		<s:TextInput id="descripcionTi" y="10" left="88" right="10" prompt="*"
-					 text="{ cliente.descripcion }"/>
-		<s:TextInput id="marcaTi" y="40" left="88" right="10" prompt="*" text="{ cliente.marca }"/>
-		<s:TextInput id="modeloTi" y="70" left="88" right="10" prompt="*" text="{ cliente.modelo }"/>
-		<s:TextInput id="serieTi" y="100" left="88" right="10" editable="{ nuevo }" enabled="{nuevo}"
-					 prompt="*" text="{ cliente.serie }"/>-->		
-		<s:DropDownList id="tipoDD" y="130" left="88" right="10" dataProvider="{ tipos }" selectedIndex="4" />
-		<s:Label y="139" left="10" fontWeight="bold" text="Categoria"/>
-		<s:Label y="105" left="10" fontWeight="bold" text="Nombre"/>
-		<s:Label y="75" left="10" fontWeight="bold" text="Password"/>
-		<s:Label y="45" left="10" fontWeight="bold" text="Password"/>
-		<s:Label y="15" left="11" fontWeight="bold" text="Usuario"/>	
+	
+		<s:DropDownList id="tipoDD" y="36" left="88" right="10" labelField="name" dataProvider="{ tiposCrt }" selectedIndex="{ cliente.tipo }" />
+		<s:TextInput id="usuarioTi" y="63" left="88" right="10" text="{ cliente.usuario }"
+					 prompt="{( activeCB.selected || tipoDD.selectedIndex != 4 ? &quot;*&quot;:&quot;&quot; )}" />
+		<s:TextInput id="passTi" y="93" left="88" right="10" text="{ cliente.password }" displayAsPassword="true" 
+					 prompt="{( activeCB.selected || tipoDD.selectedIndex != 4 ? &quot;*&quot;:&quot;&quot; )}" />
+		<s:TextInput id="passRepeatTi" y="123" left="88" right="10" text="{ cliente.password }" displayAsPassword="true" 
+					 prompt="{( activeCB.selected || tipoDD.selectedIndex != 4 ? &quot;*&quot;:&quot;&quot; )}" />
+		<s:TextInput id="emailTi" y="153" left="88" right="10" text="{ cliente.email }"  
+					 prompt="{( activeCB.selected || tipoDD.selectedIndex != 4 ? &quot;*&quot;:&quot;&quot; )}" />
+		<s:TextInput id="nombreTi" y="183" left="88" right="10" prompt="*" text="{ cliente.nombre }"  />
+		<s:TextInput id="apellidosTi" y="212" left="88" right="10" prompt="*" text="{ cliente.apellidos }"  />
+		<s:TextInput id="direccionTi" y="242" left="87" right="11" prompt="{ ( tipoDD.selectedIndex == 4 ? &quot;*&quot;:&quot;&quot; ) }" text="{ cliente.direccion }" />
+		<s:TextInput id="telefonoTi" y="272" left="87" right="11" prompt="{ ( tipoDD.selectedIndex == 4 ? &quot;*&quot;:&quot;&quot; ) }" text="{ cliente.telefono }" />
+		<s:TextInput id="celularTi" y="302" left="87" right="11" prompt="{ ( tipoDD.selectedIndex == 4 ? &quot;*&quot;:&quot;&quot; ) }" text="{ cliente.celular }" />
+		<s:TextInput id="ciudadTi" y="332" left="87" right="11" prompt="{ ( tipoDD.selectedIndex == 4 ? &quot;*&quot;:&quot;&quot; ) }" text="{ cliente.ciudad }"  />
+		<s:TextInput id="estadoTi" y="362" left="87" right="11" prompt="{ ( tipoDD.selectedIndex == 4 ? &quot;*&quot;:&quot;&quot; ) }" text="{ cliente.estado }"  />
 		
-		<s:Button id="guardar" y="325" right="10" width="98" height="30" chromeColor="#95EAC7"
+		<s:Label y="43" left="10" fontWeight="bold" text="Tipo"/>	
+		<s:Label y="68" left="11" fontWeight="bold" text="Usuario"/>
+		<s:Label y="128" left="10" fontWeight="bold" text="Password"/>
+		<s:Label y="98" left="10" fontWeight="bold" text="Password"/>
+		<s:Label y="158" left="10" fontWeight="bold" text="E-Mail"/>		
+		<s:Label y="188" left="10" fontWeight="bold" text="Nombre"/>		
+		<s:Label y="217" left="10" fontWeight="bold" text="Apellidos"/>
+		<s:Label y="367" left="9" fontWeight="bold" text="Estado"/>
+		<s:Label y="247" left="10" fontWeight="bold" text="Dirección"/>
+		<s:Label y="307" left="9" fontWeight="bold" text="Celular"/>
+		<s:Label y="277" left="9" fontWeight="bold" text="Telefono"/>
+		<s:Label y="337" left="9" fontWeight="bold" text="Ciudad"/>
+		
+		
+		<s:Button id="guardar" y="477" right="10" width="98" height="30" chromeColor="#95EAC7"
 				  click="process(event)" fontWeight="bold"/>
 		
-		<s:Button id="cancelar" x="10" y="325" width="98" height="30" label="Cancelar"
+		<s:Button id="cancelar" x="10" y="477" width="98" height="30" label="Cancelar"
 				  chromeColor="#EAE195" click="cancel(event)"/>
+		<s:CheckBox id="activeCB" x="88" y="10" label="activo" enabled="true"
+					selected="{ cliente.active }"/>
 		
 	</s:Group>	
 	
 	<s:Group includeIn="findResult" x="674" y="10" width="242" height="475">
-		<s:TextInput id="descBTi" y="27" left="10" right="10"/>
-		<s:TextInput id="marcaBTi" y="78" left="10" right="10"/>
-		<s:TextInput id="modeloBTi" y="124" left="10" right="10"/>
-		<s:TextInput id="serieBTi" y="175" left="10" right="10"/>
+		<s:TextInput id="userBTi" y="27" left="10" right="10"/>
+		<s:TextInput id="nombreBTi" y="78" left="10" right="10"/>
+		<s:TextInput id="apellidosBTi" y="124" left="10" right="10"/>
+		<s:TextInput id="emailBTi" y="175" left="10" right="10"/>
 		<s:DropDownList id="tipoBdd" y="221" left="10" right="10" labelField="name" selectedIndex="4" dataProvider="{ tipos }" />		
 		<s:Label y="11" left="10" fontWeight="bold" text="Usuario"/>
 		<s:Label y="205" left="10" fontWeight="bold" text="Tipo"/>
 		<s:Label y="159" left="10" fontWeight="bold" text="E-Mail"/>
 		<s:Label y="108" left="10" fontWeight="bold" text="Apellidos"/>
 		<s:Label y="62" left="10" fontWeight="bold" text="Nombre"/>
-		<s:Button x="114" y="281" height="22" label="&lt;&lt; Buscar" chromeColor="#F7F7F7"
+		<s:Button x="114" y="305" height="22" label="&lt;&lt; Buscar" chromeColor="#F7F7F7"
 				  icon="@Embed('assets/buscar.png')" click="busqueda_clickHandler(event)"/>
-		<s:Button id="limpiar" x="10" y="271" width="30" height="30" label="Cancelar"
+		<s:Button id="limpiar" x="10" y="295" width="30" height="30" label="Cancelar"
 				  chromeColor="#EAE195" icon="@Embed('assets/eliminar.png')" toolTip="Limpiar Filtro"
 				  click="limpiar_clickHandler(event)"/>
+		<s:CheckBox id="activeBCB" x="10" y="250" label="activo" enabled="true"
+					selected="true"/>
 	</s:Group>
 	 
 	<s:Button includeIn="options" x="10" y="10" height="22" label="Buscar &gt;&gt;" chromeColor="#F7F7F7"
