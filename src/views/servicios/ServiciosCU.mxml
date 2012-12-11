@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="656" height="478" close="{PopUpManager.removePopUp(this)}"
+			   creationComplete="{PopUpManager.centerPopUp(this)}" focusColor="#EED570"
+			   skinClass="spark.skins.spark.TitleWindowSkin" title="Servicio">	
+	
+	<fx:Script>
+		<![CDATA[
+			import com.idwa.ds.disa.vo.Servicio;
+			import com.idwa.ds.disa.vo.detail.EquipoDetail;
+			import com.idwa.ds.disa.vo.detail.ServicioDetail;
+			import com.idwa.exceptions.ZendExceptios;
+			import com.idwa.utils.DateUtil;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.controls.Alert;
+			import mx.core.IFlexDisplayObject;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import views.equipos.EquiposCRUD;
+			import views.usuarios.ClientesCRUD;
+						
+			[Bindable]
+			private var servicio:ServicioDetail = new ServicioDetail();
+			[Bindable]
+			private var isNew:Boolean;
+			
+			private var ticketOpen:Boolean;
+			
+			public function setData(servicio:ServicioDetail, isNew:Boolean):void
+			{
+				this.servicio = servicio;			
+				this.isNew = isNew;
+			}
+			
+			protected function equipoClickHandler(event:MouseEvent):void
+			{
+				var equipos:EquiposCRUD = EquiposCRUD( PopUpManager.createPopUp( this.owner, EquiposCRUD, true ) );
+				equipos.selMode = true;
+				equipos.addEventListener( "itemSelected", function(event:Event):void{
+					
+					var equipo:EquipoDetail = new EquipoDetail();
+					equipo.descripcion = event.target.equipos.selectedItem.descripcion;
+					equipo.marca = event.target.equipos.selectedItem.marca;
+					equipo.modelo = event.target.equipos.selectedItem.modelo;
+					equipo.serie = event.target.equipos.selectedItem.serie;
+					
+					servicio.equipo = equipo;
+					servicio.equipoId = servicio.equipo.serie;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function clienteClickHandler(event:MouseEvent):void
+			{
+				var clientes:ClientesCRUD = ClientesCRUD( PopUpManager.createPopUp( this.owner, ClientesCRUD, true ) );
+				clientes.selMode = true;
+				clientes.forceTypeIndex = 4; 
+				clientes.addEventListener( "itemSelected", function(event:Event):void{
+					
+					servicio.cliente = event.target.clientes.selectedItem;
+					servicio.clienteId = servicio.cliente.id;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function tecnicoClickHandler(event:MouseEvent):void
+			{
+				var tecnicos:ClientesCRUD = ClientesCRUD( PopUpManager.createPopUp( this.owner, ClientesCRUD, true ) );
+				tecnicos.selMode = true;
+				tecnicos.forceTypeIndex = 2;
+				tecnicos.addEventListener( "itemSelected", function(event:Event):void{
+					
+					servicio.tecnico = event.target.clientes.selectedItem;
+					servicio.tecnicoId = servicio.cliente.id;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function newUpdateProcess(isNew:Boolean):void
+			{					
+				Alert.show("Realmente desea "+( isNew ? "cerar":"editar" )+" esta Solicitud? ",
+					"CONFIRMAR!",
+					Alert.OK|Alert.CANCEL,this, 
+					function(event:CloseEvent):void{
+						if(event.detail==Alert.OK){
+								
+							if( isNew )
+								remS.create( servicio as Servicio );
+							else
+								remS.update( servicio as Servicio );
+																	
+						}
+					},null,Alert.OK);
+			}
+			
+			protected function faultHandler(event:FaultEvent):void
+			{
+				enabled = true;
+				Alert.show( ( event.fault.faultString == '' ? ZendExceptios.getFaultString( event.fault.faultCode ):event.fault.faultString  ) , "Error" );
+			}			
+			
+			protected function onMontoChange():void
+			{
+				/*var montoArr:Array = monto.text.split(".");;
+				if( montoArr.length > 1 )
+					monto.text = montoArr[0] + "." + String( montoArr[1] ).substr(0, Math.min( 2, String( montoArr[1] ).length ) );
+				*/
+			}			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:RemoteObject id="remS" destination="zend" source="servicioC" 
+						fault="faultHandler(event)" showBusyCursor="true"
+						invoke="{enabled = false}">
+			
+			<!--<s:method name="create" result="createUpdateHandler(event)" />
+			<s:method name="update" result="createUpdateHandler(event)" />-->
+		</s:RemoteObject>
+		
+		<s:ArrayCollection id="tipoTrabajo" >
+			<fx:Object name="Taller" value="T" />
+			<fx:Object name="Domicilio" value="D" />
+		</s:ArrayCollection>	
+		
+		<s:ArrayCollection id="tipoServicio" >
+			<fx:Object name="Garantia Extendida" value="E" />
+			<fx:Object name="Garantia" value="G" />
+			<fx:Object name="Con Cargo" value="C" />
+		</s:ArrayCollection>
+	</fx:Declarations>
+		
+	
+	<mx:DateField x="524" y="30" width="120" dayNames="{DateUtil.dayNames}" formatString="YYYY-MM-DD"
+				  monthNames="{DateUtil.monthNames}"
+				  selectedDate="{ servicio.fechaReparacionEstimada }"/>
+	<s:DropDownList y="77" right="10" width="198" dataProvider="{tipoTrabajo}" labelField="name" />
+	<s:DropDownList id="tipoServicioDD" y="120" right="10" width="198" dataProvider="{tipoServicio}" labelField="name" />
+	<s:TextInput x="446" y="152" width="198" enabled="{tipoServicioDD.selectedItem.value == 'C'}" />	
+	<s:TextArea x="10" y="30" width="309" height="52" click="equipoClickHandler(event)"
+				contentBackgroundColor="#F3FDFE" editable="false"
+				prompt="* (Click para seleccionar)"
+				text="{ servicio.equipo == null ? '':servicio.equipo.descripcion + ' / ' + servicio.equipo.marca + ' / ' + servicio.equipo.modelo + ' / ' + servicio.equipo.serie }"/>
+	<s:TextInput y="116" left="10" width="48%" contentBackgroundColor="#F3FDFE" editable="false"
+				 prompt="* (Click para seleccionar)" text="{ servicio.cliente == null ? '':servicio.cliente.nombre + ' ' + servicio.cliente.apellidos }" 
+				 click="clienteClickHandler(event)"/>
+	<s:TextInput y="172" left="10" width="48%" click="tecnicoClickHandler(event)"
+				 contentBackgroundColor="#F3FDFE" editable="false"
+				 prompt="* (Click para seleccionar)"
+				 text="{ servicio.cliente == null ? '':servicio.tecnico.nombre + ' ' + servicio.tecnico.apellidos }"/>
+	<s:TextArea x="10" y="227" width="309" height="52" prompt="*" />
+	<s:TextArea x="335" y="227" width="309" height="52" prompt="*" />
+	<s:TextArea x="10" y="316" width="309" height="52"/>
+	<s:TextArea x="335" y="316" width="309" height="52"/>
+	<s:Label x="335" y="296" fontWeight="bold" text="Comentarios"/>
+	<s:Label x="10" y="296" fontWeight="bold" text="Accesorios"/>
+	<s:Label x="335" y="207" fontWeight="bold" text="Condición"/>
+	<s:Label x="10" y="96" fontWeight="bold" text="Cliente"/>
+	<s:Label y="34" left="335" fontWeight="bold" text="Fecha estimada de reparación*:"/>	
+	<s:Label x="10" y="10" fontWeight="bold" text="Equipo"/>	
+	<s:Label x="10" y="152" fontWeight="bold" text="Tecnico Asignado"/>
+	<s:Label x="335" y="81" fontWeight="bold" text="Tipo de Trabajo"/>
+	<s:Label x="335" y="124" fontWeight="bold" text="Tipo de Servicio"/>
+	<s:Label x="391" y="160" fontWeight="bold" text="Monto"/>
+	<s:Label x="10" y="207" fontWeight="bold" text="Falla"/>	
+	
+	<s:Button right="116" bottom="10" width="112" height="36" label="Editar" chromeColor="#FCF070" enabled="{!isNew}"
+			  click="newUpdateProcess(false)" fontWeight="normal" icon="@Embed('assets/editar.png')"/>
+	<s:Button right="10" bottom="10" width="98" height="36" label="Nuevo" chromeColor="#95C3EA" enabled="{isNew}"
+			  click="newUpdateProcess(true)" icon="@Embed('assets/nuevo.png')"/>
+	
+	
+
+</s:TitleWindow>

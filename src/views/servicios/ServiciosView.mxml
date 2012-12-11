@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 currentState="contraido">
+	
+	<s:transitions> 
+		<s:Transition id="tran" fromState="*" toState="*" > 
+			<s:Sequence id="t1" targets="{[submenu]}"> 
+				<mx:Blur duration="100" blurXFrom="0.0" blurXTo="10.0" />
+				<mx:Parallel>
+					<mx:Move duration="150"/>
+					<mx:Resize duration="150"/>
+				</mx:Parallel>    
+				<mx:Blur duration="100" blurXFrom="10.0" blurXTo="0.0" /> 
+			</s:Sequence> 
+		</s:Transition>
+	</s:transitions>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.idwa.ds.disa.vo.detail.ServicioDetail;
+			import com.idwa.exceptions.ZendExceptios;
+			
+			import mx.controls.Alert;
+			import mx.core.IFlexDisplayObject;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			[Bindable]
+			private var servicio:ServicioDetail = new ServicioDetail();
+			[Bindable]
+			private var servicioSearch:ServicioDetail = new ServicioDetail();	
+			
+			protected function nuevoClickHandler(nuevo:Boolean):void
+			{
+				var serviciosCrud:ServiciosCU = ServiciosCU( PopUpManager.createPopUp( this, ServiciosCU, true ) );
+				serviciosCrud.setData( ( nuevo ? new ServicioDetail():servicios.selectedItem as ServicioDetail ), nuevo );								
+				serviciosCrud.addEventListener( "successful", function(event:Event):void{
+					
+					Alert.show( "Se realizaron los cambios con exito !" );
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );					
+					//findBtnHandler( null );
+				}); 
+			}
+			
+			protected function confirmDelete():void
+			{
+				Alert.show("Realmente desea eliminar este Registro?",
+					"CONFIRMAR ELIMINAR!",
+					Alert.OK|Alert.CANCEL,this, 
+					function(event:CloseEvent):void{
+						if(event.detail==Alert.OK){
+							
+							remS.remove( servicios.selectedItem.id );
+						}							
+					},null,Alert.OK);
+			}
+			
+			protected function myRemote_faultHandler(event:FaultEvent):void
+			{				
+				enabled = true;
+				Alert.show( ( event.fault.faultString == '' ? ZendExceptios.getFaultString( event.fault.faultCode ):event.fault.faultString  ) , "Error" );
+			}			
+			
+			protected function searchHandler(event:ResultEvent):void
+			{
+				enabled = true;
+				dp = new ArrayCollection( event.result as Array );
+				dp.filterFunction = provFilter;
+				dp.refresh();
+				//removeBtn.enabled = false;
+			}
+			
+			protected function rcuHandler(event:ResultEvent):void
+			{
+				enabled = true;				
+				//removeBtn.enabled = false;
+				Alert.show( 'Se realizaron los cambios correctamente',"Alerta");
+				dp.removeItemAt( servicios.selectedIndex );
+			}
+			
+			private function provFilter(item:Object):Boolean
+			{
+				/*
+				if( filtro.text == "" )
+					return true;
+				return item.serie.toLowerCase().indexOf( filtro.text.toLowerCase() ) != -1;
+				*/
+				return true;
+			}
+			
+			protected function busqueda_clickHandler(event:MouseEvent):void
+			{											
+				/*servicioSearch.descripcion = descBTi.text;				
+				servicioSearch.marca = marcaBTi.text;
+				servicioSearch.modelo = modeloBTi.text;
+				servicioSearch.serie = serieBTi.text;*/
+				remS.search( servicioSearch );
+			}
+			
+			
+			
+			/**
+			 * Clean search
+			 * */
+			protected function limpiar_clickHandler(event:MouseEvent):void
+			{
+				servicioSearch = new ServicioDetail();
+				//descBTi.text = marcaBTi.text = modeloBTi.text = serieBTi.text = catBTi.text = "";
+			} 
+			
+			protected function getFullName(item:Object, column:AdvancedDataGridColumn):String
+			{
+				return "name";
+			}
+			
+			protected function gotoDetalle(event:MouseEvent):void
+			{
+				currentState = ( currentState == "detalle" ? "contraido":"detalle" );
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="contraido"/>
+		<s:State name="detalle"/>
+	</s:states>
+	
+	<fx:Declarations>
+		<s:RemoteObject id="remS" destination="zend" source="categoriaC" 
+						fault="myRemote_faultHandler(event)" showBusyCursor="true"
+						invoke="enabled=false;">
+			
+			<s:method name="search" result="searchHandler(event)"/>
+			<s:method name="remove" result="rcuHandler(event)" />
+		</s:RemoteObject>
+		
+		<s:ArrayCollection id="dp" />	
+	</fx:Declarations>
+	
+	<mx:AdvancedDataGrid id="servicios" left="10" right="5" top="58" bottom="5" minWidth="980"
+						 minHeight="400" dataProvider="{dp}" designViewDataType="tree"
+						 left.contraido="5" right.contraido="5" top.contraido="47"
+						 bottom.contraido="5"
+						 left.detalle="5" right.detalle="5" top.detalle="315" bottom.detalle="5"
+						 minHeight.detalle="200">
+		<mx:groupedColumns>
+			<mx:AdvancedDataGridColumn dataField="id" headerText="ID" width="50"/>
+			<mx:AdvancedDataGridColumn dataField="fechaRecepcion" headerText="Recepción"/>
+			<mx:AdvancedDataGridColumnGroup headerText="Cliente" dataField="cliente" >
+				<mx:AdvancedDataGridColumn  headerText="Nombre" labelFunction="getFullName" />
+			</mx:AdvancedDataGridColumnGroup>
+			<mx:AdvancedDataGridColumnGroup headerText="Tecnico" dataField="tecnico" >
+				<mx:AdvancedDataGridColumn  headerText="Nombre" labelFunction="getFullName" />
+			</mx:AdvancedDataGridColumnGroup>
+			<mx:AdvancedDataGridColumnGroup headerText="Equipo" dataField="equipo" >
+				<mx:AdvancedDataGridColumn dataField="descripcion" headerText="Descripcion" />
+				<mx:AdvancedDataGridColumn dataField="marca" headerText="Marca" />
+				<mx:AdvancedDataGridColumn dataField="modelo" headerText="Modelo" />
+				<mx:AdvancedDataGridColumn dataField="serie" headerText="Serie" />
+			</mx:AdvancedDataGridColumnGroup>
+			<mx:AdvancedDataGridColumnGroup headerText="Status" dataField="status" >
+				<mx:AdvancedDataGridColumn  headerText="Status" dataField="status" />
+				<mx:AdvancedDataGridColumn  headerText="Fecha" dataField="fecha" />
+			</mx:AdvancedDataGridColumnGroup>
+		</mx:groupedColumns>
+	</mx:AdvancedDataGrid>
+	
+	<s:Group id="submenu" width="100%" minWidth="980"
+			 x.detalle="0" width.detalle="143" height.detalle="313">
+		<s:Button left="138" top="10" width="120" height="40" label="Nuevo" chromeColor="#D5FE8E"
+				  icon="@Embed('assets/nuevo.png')"
+				  left.contraido="133" top.contraido="10" height.contraido="30"
+				  click.contraido="nuevoClickHandler(true)"
+				  left.detalle="5" top.detalle="86" width.detalle="130" height.detalle="30"/>
+		
+		<s:Button left="266" top="10" width="120" height="40" label="Editar" chromeColor="#FFF58B"
+				  icon="@Embed('assets/editar.png')"
+				  left.contraido="261" top.contraido="10" height.contraido="30"
+				  left.detalle="5" top.detalle="48" width.detalle="130" height.detalle="30"/>
+		
+		<s:Button left="394" top="10" width="120" height="40" label="Detalles" chromeColor="#FFFFFF"
+				  click="gotoDetalle(event)" icon="@Embed('assets/grupo.png')"
+				  left.contraido="389" top.contraido="10" height.contraido="30"
+				  left.detalle="5" top.detalle="162" width.detalle="130" height.detalle="30"/>
+		
+		<s:Button left="10" top="10" width="120" height="40" label="Buscar" chromeColor="#9AE4FF"
+				  icon="@Embed('assets/buscar.png')"
+				  left.contraido="5" top.contraido="10" height.contraido="30"
+				  left.detalle="5" top.detalle="10" width.detalle="130" height.detalle="30"/>
+		
+		<s:Button left="794" top="10" width="120" height="40" label="Status" chromeColor="#FFFFFF"
+				  icon="@Embed('assets/eye.png')"
+				  left.contraido="789" top.contraido="10" height.contraido="30"
+				  left.detalle="5" top.detalle="238" width.detalle="130" height.detalle="30"/>
+		
+		<s:Button left="522" top="10" height="40" label="Ubicacion" chromeColor="#FFFFFF"
+				  icon="@Embed('assets/ubicacion.png')"
+				  left.contraido="517" top.contraido="10" height.contraido="30"
+				  left.detalle="5" top.detalle="200" width.detalle="130" height.detalle="30"/>
+		
+		<s:Button left="658" top="10" height="40" label="Reclamos" chromeColor="#FFFFFF"
+				  icon="@Embed('assets/phone.png')"
+				  left.contraido="653" top.contraido="10" height.contraido="30"
+				  left.detalle="5" top.detalle="276" width.detalle="130" height.detalle="30"/>
+		
+		<s:Button top="10" height="40" label="Eliminar" chromeColor="#FFA9A9"
+				  icon="@Embed('assets/eliminar.png')"
+				  right.contraido="5" top.contraido="10" height.contraido="30"
+				  left.detalle="5" top.detalle="124" width.detalle="130" height.detalle="30"/>
+	</s:Group>
+	
+</s:Group>

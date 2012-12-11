@@ -4,7 +4,7 @@
 			   xmlns:mx="library://ns.adobe.com/flex/mx"
 			   width="800" height="466" close="PopUpManager.removePopUp(this);"
 			   creationComplete="creationCompleteHandler(event)" title="Categorias"
-			   height.CU="420">
+			   height.CU="420" xmlns:utils="com.idwa.utils.*">
 	
 	<s:transitions> 
 		<s:Transition id="tran" fromState="*" toState="*" > 
@@ -33,6 +33,8 @@
 			import mx.managers.PopUpManager;
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
+			
+			import spark.core.IContentLoader;
 						
 			[Bindable]
 			public var selMode:Boolean = false;
@@ -228,14 +230,18 @@
 					 text.options="{categorias.selectedItem.descripcion}"/>
 		
 		<s:Image id="img" y="59" left="10" right="10" backgroundColor="#E8E8E8" clearOnLoad="true"
+				 complete="{ loading.visible = false }"
 				 y.CU="90" left.CU="10" right.CU="10" height.CU="227"
 				 source.CU="{ categoria.fotoUrl != null ? GlobalVars.BASE_URL + '/files/' + categoria.fotoUrl:null }"
 				 left.options="10" right.options="10" height.options="296"
-				 source.options="{ categorias.selectedItem.fotoUrl != null ? GlobalVars.BASE_URL + '/files/' + categorias.selectedItem.fotoUrl:null }"/>		
+				 backgroundColor.options="#F8F8F8"
+				 source.options="{ categorias.selectedItem.fotoUrl != null ? GlobalVars.BASE_URL + '/files/' + categorias.selectedItem.fotoUrl:null }"
+				 progress="{ loading.visible = true }" />	
+		
+		<utils:AnimatedGif id="loading" visible="false" source="assets/notif_loading.gif" verticalCenter.options="10" horizontalCenter.options="0" />
 		
 		<s:Button id="guardar" includeIn="CU" y="325" right="10" width="98" height="30"
-				  chromeColor="#95EAC7" click="process(event)" fontWeight="bold"/>
-		
+				  chromeColor="#95EAC7" click="process(event)" fontWeight="bold"/>		
 		<s:Button id="cancelar" includeIn="CU" x="10" y="325" width="98" height="30" label="Cancelar"
 				  chromeColor="#EAE195" click="cancel(event)"/>
 		<s:Button includeIn="CU" x="10" y="61" label="Elegir Imagen" click="loadImage()"/>

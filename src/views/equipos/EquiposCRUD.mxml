@@ -94,7 +94,8 @@
 					categoriaTi.text = equipos.selectedItem.cDescripcion;
 					equipo.categoriaId = equipos.selectedItem.categoriaId;
 					equipo.descripcion = equipos.selectedItem.descripcion;
-					equipo.fechaCompra = DateUtil.getStringAsDate( equipos.selectedItem.fechaCompra );
+					var dateF:DateUtil = new DateUtil();	
+					equipo.fechaCompra = dateF.parseDate( equipos.selectedItem.fechaCompra );
 					equipo.marca = equipos.selectedItem.marca;
 					equipo.modelo = equipos.selectedItem.modelo;
 					equipo.serie = equipos.selectedItem.serie;
@@ -281,7 +282,7 @@
 
 		<s:Label y="15" left="215" fontWeight="bold" text="Fecha de Compra *"/>
 		<mx:DateField id="fechaCompraDC" x="329" y="10" dayNames="{DateUtil.dayNames}"
-					  formatString="YYYY-MM-DD" monthNames="{DateUtil.monthNames}"
+					  formatString="DD-MM-YYYY" monthNames="{DateUtil.monthNames}"
 					  selectedDate="{ equipo.fechaCompra }"/>
 		<s:TextInput id="descripcionTi" y="46" left="88" right="10" prompt="*"
 					 text="{ equipo.descripcion }"/>

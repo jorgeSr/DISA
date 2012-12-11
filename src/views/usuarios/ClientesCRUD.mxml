@@ -41,6 +41,8 @@
 			import views.categorias.CategoriasCRUD;
 			
 			[Bindable]
+			public var forceTypeIndex:int = -1;
+			[Bindable]
 			public var selMode:Boolean = false;
 			[Bindable]
 			private var cliente:User = new User();
@@ -290,7 +292,7 @@
 				<s:GridColumn dataField="apellidos" headerText="Apellidos"></s:GridColumn>
 				<s:GridColumn dataField="email" headerText="E-Mail"></s:GridColumn>
 				<s:GridColumn dataField="tipo" headerText="Tipo" labelFunction="getTipo" ></s:GridColumn>
-				<s:GridColumn dataField="active" headerText="Tipo" labelFunction="getActivo" width="50" ></s:GridColumn>
+				<s:GridColumn dataField="active" headerText="Activo" labelFunction="getActivo" width="50" ></s:GridColumn>
 			</s:ArrayList>
 		</s:columns>
 	</s:DataGrid>
@@ -361,7 +363,9 @@
 		<s:TextInput id="nombreBTi" y="78" left="10" right="10"/>
 		<s:TextInput id="apellidosBTi" y="124" left="10" right="10"/>
 		<s:TextInput id="emailBTi" y="175" left="10" right="10"/>
-		<s:DropDownList id="tipoBdd" y="221" left="10" right="10" labelField="name" selectedIndex="4" dataProvider="{ tipos }" />		
+		<s:DropDownList id="tipoBdd" y="221" left="10" right="10" labelField="name" dataProvider="{ tipos }"
+						selectedIndex="{ forceTypeIndex != -1 ? forceTypeIndex:4 }" 						
+						enabled="{ forceTypeIndex == -1 }"/>		
 		<s:Label y="11" left="10" fontWeight="bold" text="Usuario"/>
 		<s:Label y="205" left="10" fontWeight="bold" text="Tipo"/>
 		<s:Label y="159" left="10" fontWeight="bold" text="E-Mail"/>
