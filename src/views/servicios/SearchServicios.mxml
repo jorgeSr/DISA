@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="378" height="480" close="{PopUpManager.removePopUp(this)}"
+			   creationComplete="{PopUpManager.centerPopUp(this); servicio.status = new Status() }" focusColor="#EED570"
+			   skinClass="spark.skins.spark.TitleWindowSkin" title="Busqueda de Servicios">	
+	
+	<fx:Script>
+		<![CDATA[
+			import com.idwa.ds.disa.vo.Servicio;
+			import com.idwa.ds.disa.vo.Status;
+			import com.idwa.ds.disa.vo.detail.EquipoDetail;
+			import com.idwa.ds.disa.vo.detail.ServicioDetail;
+			import com.idwa.exceptions.ZendExceptios;
+			import com.idwa.utils.DateUtil;
+			
+			import flash.net.navigateToURL;
+			
+			import mx.controls.Alert;
+			import mx.core.IFlexDisplayObject;
+			import mx.events.CloseEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import views.equipos.EquiposCRUD;
+			import views.sucursales.SucursalesCRUD;
+			import views.usuarios.ClientesCRUD;
+						
+			[Bindable]
+			private var servicio:ServicioDetail = new ServicioDetail();			
+			
+			protected function equipoClickHandler(event:MouseEvent):void
+			{
+				var equipos:EquiposCRUD = EquiposCRUD( PopUpManager.createPopUp( this.owner, EquiposCRUD, true ) );
+				equipos.selMode = true;
+				equipos.addEventListener( "itemSelected", function(event:Event):void{
+					
+					var equipo:EquipoDetail = new EquipoDetail();
+					equipo.descripcion = event.target.equipos.selectedItem.descripcion;
+					equipo.marca = event.target.equipos.selectedItem.marca;
+					equipo.modelo = event.target.equipos.selectedItem.modelo;
+					equipo.serie = event.target.equipos.selectedItem.serie;
+					
+					servicio.equipo = equipo;
+					servicio.equipoId = servicio.equipo.serie;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function clienteClickHandler(event:MouseEvent):void
+			{
+				var clientes:ClientesCRUD = ClientesCRUD( PopUpManager.createPopUp( this.owner, ClientesCRUD, true ) );
+				clientes.selMode = true;
+				clientes.forceTypeIndex = 4; 
+				clientes.addEventListener( "itemSelected", function(event:Event):void{
+					
+					servicio.cliente = event.target.clientes.selectedItem;
+					servicio.clienteId = servicio.cliente.id;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function tecnicoClickHandler(event:MouseEvent):void
+			{
+				var tecnicos:ClientesCRUD = ClientesCRUD( PopUpManager.createPopUp( this.owner, ClientesCRUD, true ) );
+				tecnicos.selMode = true;
+				tecnicos.forceTypeIndex = 2;
+				tecnicos.addEventListener( "itemSelected", function(event:Event):void{
+					
+					servicio.tecnico = event.target.clientes.selectedItem;
+					servicio.tecnicoId = servicio.tecnico.id;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function searchProcess():void
+			{				
+				remS.search( servicio );
+			}
+			
+			protected function searchHandler(event:ResultEvent):void
+			{
+				enabled = true;				
+				dispatchEvent( new Event('successful') );
+			}
+			
+			protected function faultHandler(event:FaultEvent):void
+			{
+				enabled = true;
+				Alert.show( ( event.fault.faultString == '' ? ZendExceptios.getFaultString( event.fault.faultCode ):event.fault.faultString  ) , "Error" );
+			}			
+						
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:RemoteObject id="remS" destination="zend" source="servicioC" 
+						fault="faultHandler(event)" showBusyCursor="true"
+						invoke="{enabled = false}">
+			
+			<s:method name="search" result="searchHandler(event)" />
+		</s:RemoteObject>
+		
+		<s:ArrayCollection id="tipoTrabajo" >
+			<fx:Object name="Todos" value="" />
+			<fx:Object name="Taller" value="T" />
+			<fx:Object name="Domicilio" value="D" />
+		</s:ArrayCollection>	
+		
+		<s:ArrayCollection id="tipoServicio" >
+			<fx:Object name="Todos" value="" />
+			<fx:Object name="Garantia Extendida" value="E" />
+			<fx:Object name="Garantia" value="G" />
+			<fx:Object name="Con Cargo" value="C" />
+		</s:ArrayCollection>
+		
+		<s:ArrayCollection id="status" >
+			<fx:Object name="Todos" value="0" />
+			<fx:Object name="Recibido" value="1" />
+			<fx:Object name="En otro lado" value="2" />
+		</s:ArrayCollection>	
+	</fx:Declarations>
+		
+	<s:TextArea y="32" left="10" right="10" height="52" click="equipoClickHandler(event)"
+				contentBackgroundColor="#F3FDFE" editable="false"
+				prompt="* (Click para seleccionar)"
+				text="{ servicio.equipo == null ? '':servicio.equipo.descripcion + ' / ' + servicio.equipo.marca + ' / ' + servicio.equipo.modelo + ' / ' + servicio.equipo.serie }"/>
+	<s:TextInput y="118" left="10" right="10" click="clienteClickHandler(event)"
+				 contentBackgroundColor="#F3FDFE" editable="false"
+				 prompt="* (Click para seleccionar)"
+				 text="{ servicio.cliente == null ? '':servicio.cliente.nombre + ' ' + servicio.cliente.apellidos }"/>
+	<s:TextInput y="174" left="10" right="10" click="tecnicoClickHandler(event)"
+				 contentBackgroundColor="#F3FDFE" editable="false"
+				 prompt="* (Click para seleccionar)"
+				 text="{ servicio.cliente == null ? '':servicio.tecnico.nombre + ' ' + servicio.tecnico.apellidos }"/>
+	<s:DropDownList id="tipoTraDD" y="231" left="10" right="10" selectedItem="0"
+					change="{servicio.tipoTrabajo = tipoTraDD.selectedItem.value }"
+					dataProvider="{tipoTrabajo}" labelField="name"/>
+	<s:DropDownList id="tipoServicioDD" y="285" left="10" right="10"
+					change="{servicio.tipoServicio = tipoServicioDD.selectedItem.value}"
+					dataProvider="{tipoServicio}" labelField="name" selectedItem="0" />
+	<s:DropDownList id="statusServicioDD" y="341" left="10" right="10"
+					change="{servicio.status.status = statusServicioDD.selectedItem.value}"
+					dataProvider="{status}" labelField="name" selectedItem="0" />
+	<s:Label x="10" y="321" fontWeight="bold" text="Status"/>
+	<s:Label x="10" y="98" fontWeight="bold" text="Cliente"/>
+	<s:Label x="10" y="12" fontWeight="bold" text="Equipo"/>	
+	<s:Label x="10" y="154" fontWeight="bold" text="Tecnico Asignado"/>	
+	<s:Label x="10" y="211" fontWeight="bold" text="Tipo de Trabajo"/>
+	<s:Label x="10" y="265" fontWeight="bold" text="Tipo de Servicio"/>
+	
+	<s:Button left="10" bottom="10" height="30" label="Limpiar" chromeColor="#FCF070"
+			  click="{ false }" fontWeight="normal"
+			  icon="@Embed('assets/eliminar.png')"/>
+	<s:Button right="10" bottom="10" height="30" label="Buscar" chromeColor="#95C3EA"
+			  click="{ remS.search(servicio) }" icon="@Embed('assets/buscar.png')"/>
+	
+	
+
+</s:TitleWindow>
