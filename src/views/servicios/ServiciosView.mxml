@@ -2,7 +2,8 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
 		 xmlns:s="library://ns.adobe.com/flex/spark"
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
-		 currentState="contraido">
+		 currentState="contraido"
+		 creationComplete="{ remS.getById(5) }">
 	
 	<s:transitions> 
 		<s:Transition id="tran" fromState="*" toState="*" > 
@@ -19,12 +20,14 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.idwa.ds.disa.vo.User;
 			import com.idwa.ds.disa.vo.detail.ServicioDetail;
 			import com.idwa.exceptions.ZendExceptios;
 			
 			import mx.controls.Alert;
 			import mx.core.IFlexDisplayObject;
 			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
 			import mx.managers.PopUpManager;
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
@@ -34,6 +37,16 @@
 			[Bindable]
 			private var servicioSearch:ServicioDetail = new ServicioDetail();	
 			
+			protected function searchClickHandler():void
+			{
+				var search:SearchServicios = SearchServicios( PopUpManager.createPopUp( this, SearchServicios, true ) );								
+				search.addEventListener( "successful", function(event:Event):void{
+					
+					dp = new ArrayCollection( event.target.remS.search.lastResult as Array );
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				}); 
+			}
+			
 			protected function nuevoClickHandler(nuevo:Boolean):void
 			{
 				var serviciosCrud:ServiciosCU = ServiciosCU( PopUpManager.createPopUp( this, ServiciosCU, true ) );
@@ -41,8 +54,8 @@
 				serviciosCrud.addEventListener( "successful", function(event:Event):void{
 					
 					Alert.show( "Se realizaron los cambios con exito !" );
-					PopUpManager.removePopUp( event.target as IFlexDisplayObject );					
-					//findBtnHandler( null );
+					remS.getById( event.target.lastInsertUpdateId );
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
 				}); 
 			}
 			
@@ -63,64 +76,33 @@
 			{				
 				enabled = true;
 				Alert.show( ( event.fault.faultString == '' ? ZendExceptios.getFaultString( event.fault.faultCode ):event.fault.faultString  ) , "Error" );
-			}			
+			}
 			
-			protected function searchHandler(event:ResultEvent):void
+			protected function remove_resultHandler(event:ResultEvent):void
 			{
 				enabled = true;
-				dp = new ArrayCollection( event.result as Array );
-				dp.filterFunction = provFilter;
-				dp.refresh();
-				//removeBtn.enabled = false;
-			}
-			
-			protected function rcuHandler(event:ResultEvent):void
-			{
-				enabled = true;				
-				//removeBtn.enabled = false;
 				Alert.show( 'Se realizaron los cambios correctamente',"Alerta");
 				dp.removeItemAt( servicios.selectedIndex );
+				dp.refresh();
 			}
 			
-			private function provFilter(item:Object):Boolean
+			protected function getById_resultHandler(event:ResultEvent):void
 			{
-				/*
-				if( filtro.text == "" )
-					return true;
-				return item.serie.toLowerCase().indexOf( filtro.text.toLowerCase() ) != -1;
-				*/
-				return true;
+				enabled = true;
+				dp = new ArrayCollection( event.result as Array );	
 			}
-			
-			protected function busqueda_clickHandler(event:MouseEvent):void
-			{											
-				/*servicioSearch.descripcion = descBTi.text;				
-				servicioSearch.marca = marcaBTi.text;
-				servicioSearch.modelo = modeloBTi.text;
-				servicioSearch.serie = serieBTi.text;*/
-				remS.search( servicioSearch );
-			}
-			
-			
-			
-			/**
-			 * Clean search
-			 * */
-			protected function limpiar_clickHandler(event:MouseEvent):void
-			{
-				servicioSearch = new ServicioDetail();
-				//descBTi.text = marcaBTi.text = modeloBTi.text = serieBTi.text = catBTi.text = "";
-			} 
 			
 			protected function getFullName(item:Object, column:AdvancedDataGridColumn):String
-			{
-				return "name";
+			{				
+				return (item as User).nombre + " " + (item as User).apellidos;
 			}
 			
 			protected function gotoDetalle(event:MouseEvent):void
 			{
 				currentState = ( currentState == "detalle" ? "contraido":"detalle" );
 			}
+			
+			
 			
 		]]>
 	</fx:Script>
@@ -130,12 +112,12 @@
 	</s:states>
 	
 	<fx:Declarations>
-		<s:RemoteObject id="remS" destination="zend" source="categoriaC" 
+		<s:RemoteObject id="remS" destination="zend" source="servicioC" 
 						fault="myRemote_faultHandler(event)" showBusyCursor="true"
 						invoke="enabled=false;">
 			
-			<s:method name="search" result="searchHandler(event)"/>
-			<s:method name="remove" result="rcuHandler(event)" />
+			<s:method name="getById" result="getById_resultHandler(event)"/>
+			<s:method name="remove" result="remove_resultHandler(event)" />
 		</s:RemoteObject>
 		
 		<s:ArrayCollection id="dp" />	
@@ -170,7 +152,7 @@
 	</mx:AdvancedDataGrid>
 	
 	<s:Group id="submenu" width="100%" minWidth="980"
-			 x.detalle="0" width.detalle="143" height.detalle="313">
+			 x.detalle="0" width.detalle="140" height.detalle="310">
 		<s:Button left="138" top="10" width="120" height="40" label="Nuevo" chromeColor="#D5FE8E"
 				  icon="@Embed('assets/nuevo.png')"
 				  left.contraido="133" top.contraido="10" height.contraido="30"
@@ -188,7 +170,7 @@
 				  left.detalle="5" top.detalle="162" width.detalle="130" height.detalle="30"/>
 		
 		<s:Button left="10" top="10" width="120" height="40" label="Buscar" chromeColor="#9AE4FF"
-				  icon="@Embed('assets/buscar.png')"
+				  icon="@Embed('assets/buscar.png')" click="searchClickHandler()"
 				  left.contraido="5" top.contraido="10" height.contraido="30"
 				  left.detalle="5" top.detalle="10" width.detalle="130" height.detalle="30"/>
 		
@@ -211,6 +193,8 @@
 				  icon="@Embed('assets/eliminar.png')"
 				  right.contraido="5" top.contraido="10" height.contraido="30"
 				  left.detalle="5" top.detalle="124" width.detalle="130" height.detalle="30"/>
+	</s:Group>
+	<s:Group includeIn="detalle" left="140" right="5" top="0" bottom="210">
 	</s:Group>
 	
 </s:Group>

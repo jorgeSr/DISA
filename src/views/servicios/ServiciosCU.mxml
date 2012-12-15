@@ -2,7 +2,7 @@
 <s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
 			   xmlns:s="library://ns.adobe.com/flex/spark"
 			   xmlns:mx="library://ns.adobe.com/flex/mx"
-			   width="656" height="478" close="{PopUpManager.removePopUp(this)}"
+			   width="656" height="526" close="{PopUpManager.removePopUp(this)}"
 			   creationComplete="{PopUpManager.centerPopUp(this)}" focusColor="#EED570"
 			   skinClass="spark.skins.spark.TitleWindowSkin" title="Servicio">	
 	
@@ -24,6 +24,7 @@
 			import mx.rpc.events.ResultEvent;
 			
 			import views.equipos.EquiposCRUD;
+			import views.sucursales.SucursalesCRUD;
 			import views.usuarios.ClientesCRUD;
 						
 			[Bindable]
@@ -37,6 +38,11 @@
 			{
 				this.servicio = servicio;			
 				this.isNew = isNew;
+			}
+			
+			public function get lastInsertUpdateId():int{
+				
+				return ( !isNew ? remS.create.lastResult:remS.update.lastResult );	
 			}
 			
 			protected function equipoClickHandler(event:MouseEvent):void
@@ -78,26 +84,73 @@
 				tecnicos.addEventListener( "itemSelected", function(event:Event):void{
 					
 					servicio.tecnico = event.target.clientes.selectedItem;
-					servicio.tecnicoId = servicio.cliente.id;
+					servicio.tecnicoId = servicio.tecnico.id;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function sucursalClickHandler(event:MouseEvent):void
+			{
+				var sucursales:SucursalesCRUD = SucursalesCRUD( PopUpManager.createPopUp( this.owner, SucursalesCRUD, true ) );
+				sucursales.selMode = true;
+				sucursales.addEventListener( "itemSelected", function(event:Event):void{
+					
+					servicio.sucursal = event.target.sucursales.selectedItem;
+					servicio.sucursalId = servicio.sucursal.id;
 					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
 				});
 			}
 			
 			protected function newUpdateProcess(isNew:Boolean):void
-			{					
-				Alert.show("Realmente desea "+( isNew ? "cerar":"editar" )+" esta Solicitud? ",
-					"CONFIRMAR!",
-					Alert.OK|Alert.CANCEL,this, 
-					function(event:CloseEvent):void{
-						if(event.detail==Alert.OK){
+			{				
+				if( verify() )
+					Alert.show("Realmente desea "+( isNew ? "cerar":"editar" )+" esta Solicitud? ",
+						"CONFIRMAR!",
+						Alert.OK|Alert.CANCEL,this, 
+						function(event:CloseEvent):void{
+							if(event.detail==Alert.OK){
 								
-							if( isNew )
-								remS.create( servicio as Servicio );
-							else
-								remS.update( servicio as Servicio );
-																	
-						}
-					},null,Alert.OK);
+								//Add data so servicio object
+								servicio.tipoServicio = tipoServicioDD.selectedItem.value;
+								servicio.tipoTrabajo = tipoTraDD.selectedItem.value;
+								servicio.monto = Number( montoTi.text );
+								servicio.fechaReparacionEstimada = fechaDF.selectedDate;
+								servicio.condision = condicionTa.text;
+								servicio.comentarios = comentariosTa.text;
+								servicio.accesorios = accesoriosTa.text;
+								servicio.falla = fallaTa.text;
+								
+								if( isNew )
+									remS.create( servicio as Servicio );
+								else
+									remS.update( servicio as Servicio );																	
+							}
+						},null,Alert.OK);
+			}
+			
+			protected function verify():Boolean
+			{			
+				if( servicio.equipoId == null || servicio.equipoId == "" || servicio.clienteId == 0 || servicio.tecnicoId == 0
+					|| servicio.fechaReparacionEstimada == null || tipoTraDD.selectedIndex == -1 || tipoServicioDD.selectedIndex == -1 
+					|| montoTi.text == "" || fallaTa.text == "" || condicionTa.text == "" || servicio.sucursalId == 0 ){
+				
+					Alert.show( "Los campos marcados con * son obligatorios", "Alerta" );
+					return false;
+				}
+				
+				if( int( montoTi.text ) == 0 && tipoServicioDD.selectedIndex == 2 ){
+				
+					Alert.show( "Debe indicar el monto", "Alerta" );
+					return false;
+				}
+				
+				return true;
+			}
+			
+			protected function cuHandler(event:ResultEvent):void
+			{
+				enabled = true;				
+				dispatchEvent( new Event('successful') );
 			}
 			
 			protected function faultHandler(event:FaultEvent):void
@@ -108,10 +161,15 @@
 			
 			protected function onMontoChange():void
 			{
-				/*var montoArr:Array = monto.text.split(".");;
+				if( tipoServicioDD.selectedIndex != 2 )
+				{
+					montoTi.text = "0";
+					return;
+				}				
+				
+				var montoArr:Array = montoTi.text.split(".");
 				if( montoArr.length > 1 )
-					monto.text = montoArr[0] + "." + String( montoArr[1] ).substr(0, Math.min( 2, String( montoArr[1] ).length ) );
-				*/
+					montoTi.text = montoArr[0] + "." + String( montoArr[1] ).substr(0, Math.min( 2, String( montoArr[1] ).length ) );
 			}			
 		]]>
 	</fx:Script>
@@ -121,8 +179,8 @@
 						fault="faultHandler(event)" showBusyCursor="true"
 						invoke="{enabled = false}">
 			
-			<!--<s:method name="create" result="createUpdateHandler(event)" />
-			<s:method name="update" result="createUpdateHandler(event)" />-->
+			<s:method name="create" result="cuHandler(event)" />
+			<s:method name="update" result="cuHandler(event)" />
 		</s:RemoteObject>
 		
 		<s:ArrayCollection id="tipoTrabajo" >
@@ -137,39 +195,52 @@
 		</s:ArrayCollection>
 	</fx:Declarations>
 		
+	<s:TextInput y="30" left="10" width="48%" click="sucursalClickHandler(event)"
+				 contentBackgroundColor="#F3FDFE" editable="false"
+				 prompt="* (Click para seleccionar)"
+				 text="{ servicio.sucursal == null ? '':servicio.sucursal.descripcion }"/>
 	
-	<mx:DateField x="524" y="30" width="120" dayNames="{DateUtil.dayNames}" formatString="YYYY-MM-DD"
-				  monthNames="{DateUtil.monthNames}"
-				  selectedDate="{ servicio.fechaReparacionEstimada }"/>
-	<s:DropDownList y="77" right="10" width="198" dataProvider="{tipoTrabajo}" labelField="name" />
-	<s:DropDownList id="tipoServicioDD" y="120" right="10" width="198" dataProvider="{tipoServicio}" labelField="name" />
-	<s:TextInput x="446" y="152" width="198" enabled="{tipoServicioDD.selectedItem.value == 'C'}" />	
-	<s:TextArea x="10" y="30" width="309" height="52" click="equipoClickHandler(event)"
+	<s:TextInput id="montoTi" x="446" y="168" width="198" change="onMontoChange()"
+				 enabled="{tipoServicioDD.selectedItem.value == 'C'}" restrict="[0-9,.]" text="0"
+				 valueCommit="onMontoChange()"/>	
+	<s:TextArea x="10" y="82" width="309" height="52" click="equipoClickHandler(event)"
 				contentBackgroundColor="#F3FDFE" editable="false"
 				prompt="* (Click para seleccionar)"
 				text="{ servicio.equipo == null ? '':servicio.equipo.descripcion + ' / ' + servicio.equipo.marca + ' / ' + servicio.equipo.modelo + ' / ' + servicio.equipo.serie }"/>
-	<s:TextInput y="116" left="10" width="48%" contentBackgroundColor="#F3FDFE" editable="false"
+	<s:TextInput y="168" left="10" width="48%" contentBackgroundColor="#F3FDFE" editable="false"
 				 prompt="* (Click para seleccionar)" text="{ servicio.cliente == null ? '':servicio.cliente.nombre + ' ' + servicio.cliente.apellidos }" 
 				 click="clienteClickHandler(event)"/>
-	<s:TextInput y="172" left="10" width="48%" click="tecnicoClickHandler(event)"
+	<s:TextInput y="224" left="10" width="48%" click="tecnicoClickHandler(event)"
 				 contentBackgroundColor="#F3FDFE" editable="false"
 				 prompt="* (Click para seleccionar)"
 				 text="{ servicio.cliente == null ? '':servicio.tecnico.nombre + ' ' + servicio.tecnico.apellidos }"/>
-	<s:TextArea x="10" y="227" width="309" height="52" prompt="*" />
-	<s:TextArea x="335" y="227" width="309" height="52" prompt="*" />
-	<s:TextArea x="10" y="316" width="309" height="52"/>
-	<s:TextArea x="335" y="316" width="309" height="52"/>
-	<s:Label x="335" y="296" fontWeight="bold" text="Comentarios"/>
-	<s:Label x="10" y="296" fontWeight="bold" text="Accesorios"/>
-	<s:Label x="335" y="207" fontWeight="bold" text="Condición"/>
-	<s:Label x="10" y="96" fontWeight="bold" text="Cliente"/>
-	<s:Label y="34" left="335" fontWeight="bold" text="Fecha estimada de reparación*:"/>	
-	<s:Label x="10" y="10" fontWeight="bold" text="Equipo"/>	
-	<s:Label x="10" y="152" fontWeight="bold" text="Tecnico Asignado"/>
-	<s:Label x="335" y="81" fontWeight="bold" text="Tipo de Trabajo"/>
-	<s:Label x="335" y="124" fontWeight="bold" text="Tipo de Servicio"/>
-	<s:Label x="391" y="160" fontWeight="bold" text="Monto"/>
-	<s:Label x="10" y="207" fontWeight="bold" text="Falla"/>	
+	
+	<mx:DateField id="fechaDF" x="524" y="30" width="120" dayNames="{DateUtil.dayNames}"
+				  formatString="YYYY-MM-DD" monthNames="{DateUtil.monthNames}"
+				  selectedDate="{ servicio.fechaReparacionEstimada }" 
+				  change="{ servicio.fechaReparacionEstimada = fechaDF.selectedDate }"/>
+	<s:DropDownList id="tipoTraDD" y="76" right="10" width="198" dataProvider="{tipoTrabajo}"
+					labelField="name" change="{ servicio.tipoTrabajo = tipoTraDD.selectedItem.value }"/>
+	<s:DropDownList id="tipoServicioDD" y="119" right="10" width="198" dataProvider="{tipoServicio}" labelField="name"
+					change="{servicio.tipoServicio = tipoServicioDD.selectedItem.value; 
+					if( tipoServicioDD.selectedIndex == 2 ) montoTi.text = '0'}" />
+	
+	<s:TextArea id="fallaTa" x="10" y="279" width="309" height="52" prompt="*"/>
+	<s:TextArea id="condicionTa" x="335" y="279" width="309" height="52" prompt="*"/>
+	<s:TextArea id="accesoriosTa" x="10" y="368" width="309" height="52"/>
+	<s:TextArea id="comentariosTa" x="335" y="368" width="309" height="52"/>
+	<s:Label x="335" y="348" fontWeight="bold" text="Comentarios"/>
+	<s:Label x="10" y="348" fontWeight="bold" text="Accesorios"/>
+	<s:Label x="335" y="259" fontWeight="bold" text="Condición"/>
+	<s:Label x="10" y="148" fontWeight="bold" text="Cliente"/>
+	<s:Label y="30" left="335" fontWeight="bold" text="Fecha estimada de reparación*:"/>	
+	<s:Label x="10" y="62" fontWeight="bold" text="Equipo"/>	
+	<s:Label x="10" y="204" fontWeight="bold" text="Tecnico Asignado"/>	
+	<s:Label x="10" y="10" fontWeight="bold" text="Sucursal de Recepción"/>
+	<s:Label x="335" y="80" fontWeight="bold" text="Tipo de Trabajo"/>
+	<s:Label x="335" y="123" fontWeight="bold" text="Tipo de Servicio"/>
+	<s:Label x="391" y="176" fontWeight="bold" text="Monto"/>
+	<s:Label x="10" y="259" fontWeight="bold" text="Falla"/>	
 	
 	<s:Button right="116" bottom="10" width="112" height="36" label="Editar" chromeColor="#FCF070" enabled="{!isNew}"
 			  click="newUpdateProcess(false)" fontWeight="normal" icon="@Embed('assets/editar.png')"/>
