@@ -2,8 +2,7 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
 		 xmlns:s="library://ns.adobe.com/flex/spark"
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
-		 currentState="contraido"
-		 creationComplete="{ remS.getById(5) }">
+		 currentState="contraido" >
 	
 	<s:transitions> 
 		<s:Transition id="tran" fromState="*" toState="*" > 
@@ -94,7 +93,13 @@
 			
 			protected function getFullName(item:Object, column:AdvancedDataGridColumn):String
 			{				
-				return (item as User).nombre + " " + (item as User).apellidos;
+				switch( column.dataTipField ){
+				
+					case "cliente": return item.cNombre + " " + item.cApellidos; break;
+					case "tecnico": return item.tNombre + " " + item.tApellidos; break;
+					case "recibio": return item.rNombre + " " + item.rApellidos; break;
+					default: return "n/a";
+				}				
 			}
 			
 			protected function gotoDetalle(event:MouseEvent):void
@@ -123,30 +128,50 @@
 		<s:ArrayCollection id="dp" />	
 	</fx:Declarations>
 	
+	<!--
+	/****
+	* S -> Servicio
+	* E -> Equipo
+	* CA -> Categoria
+	* C -> Cliente ( User Class )
+	* SU -> Sucursal
+	* ST -> Status		 
+	* T -> Tecnico ( User Class )		 
+	* R -> Recibe ( User Class )
+	*****/
+	-->
 	<mx:AdvancedDataGrid id="servicios" left="10" right="5" top="58" bottom="5" minWidth="980"
 						 minHeight="400" dataProvider="{dp}" designViewDataType="tree"
 						 left.contraido="5" right.contraido="5" top.contraido="47"
 						 bottom.contraido="5"
 						 left.detalle="5" right.detalle="5" top.detalle="315" bottom.detalle="5"
 						 minHeight.detalle="200">
+		
 		<mx:groupedColumns>
 			<mx:AdvancedDataGridColumn dataField="id" headerText="ID" width="50"/>
 			<mx:AdvancedDataGridColumn dataField="fechaRecepcion" headerText="Recepción"/>
-			<mx:AdvancedDataGridColumnGroup headerText="Cliente" dataField="cliente" >
-				<mx:AdvancedDataGridColumn  headerText="Nombre" labelFunction="getFullName" />
+			<mx:AdvancedDataGridColumnGroup headerText="Cliente" >
+				<mx:AdvancedDataGridColumn dataTipField="cliente" headerText="Nombre" labelFunction="getFullName" />
 			</mx:AdvancedDataGridColumnGroup>
-			<mx:AdvancedDataGridColumnGroup headerText="Tecnico" dataField="tecnico" >
-				<mx:AdvancedDataGridColumn  headerText="Nombre" labelFunction="getFullName" />
+			<mx:AdvancedDataGridColumnGroup headerText="Tecnico" >
+				<mx:AdvancedDataGridColumn dataTipField="tecnico" headerText="Nombre" labelFunction="getFullName" />
 			</mx:AdvancedDataGridColumnGroup>
-			<mx:AdvancedDataGridColumnGroup headerText="Equipo" dataField="equipo" >
-				<mx:AdvancedDataGridColumn dataField="descripcion" headerText="Descripcion" />
-				<mx:AdvancedDataGridColumn dataField="marca" headerText="Marca" />
-				<mx:AdvancedDataGridColumn dataField="modelo" headerText="Modelo" />
-				<mx:AdvancedDataGridColumn dataField="serie" headerText="Serie" />
+			<mx:AdvancedDataGridColumnGroup headerText="Recibio" >				
+				<mx:AdvancedDataGridColumn dataTipField="recibio" headerText="Nombre" labelFunction="getFullName" />
+			</mx:AdvancedDataGridColumnGroup>			
+			<mx:AdvancedDataGridColumnGroup headerText="Equipo" >
+				<mx:AdvancedDataGridColumn dataField="eDescripcion" headerText="Descripcion" />
+				<mx:AdvancedDataGridColumn dataField="eMarca" headerText="Marca" />
+				<mx:AdvancedDataGridColumn dataField="eModelo" headerText="Modelo" />
+				<mx:AdvancedDataGridColumn dataField="eSerie" headerText="Serie" />
+				<mx:AdvancedDataGridColumn dataField="caDescripcion" headerText="Categoria" />
 			</mx:AdvancedDataGridColumnGroup>
-			<mx:AdvancedDataGridColumnGroup headerText="Status" dataField="status" >
-				<mx:AdvancedDataGridColumn  headerText="Status" dataField="status" />
-				<mx:AdvancedDataGridColumn  headerText="Fecha" dataField="fecha" />
+			<mx:AdvancedDataGridColumnGroup headerText="Ubicacion" >				
+				<mx:AdvancedDataGridColumn  headerText="Sucursal" dataField="suDescripcion" />
+			</mx:AdvancedDataGridColumnGroup>
+			<mx:AdvancedDataGridColumnGroup headerText="Status" >
+				<mx:AdvancedDataGridColumn  headerText="Status" dataField="stStatus" />
+				<mx:AdvancedDataGridColumn  headerText="Fecha" dataField="stFecha" />
 			</mx:AdvancedDataGridColumnGroup>
 		</mx:groupedColumns>
 	</mx:AdvancedDataGrid>
@@ -162,11 +187,13 @@
 		<s:Button left="266" top="10" width="120" height="40" label="Editar" chromeColor="#FFF58B"
 				  icon="@Embed('assets/editar.png')"
 				  left.contraido="261" top.contraido="10" height.contraido="30"
+				  enabled.contraido="{ servicios.selectedIndex != -1 }"
 				  left.detalle="5" top.detalle="48" width.detalle="130" height.detalle="30"/>
 		
 		<s:Button left="394" top="10" width="120" height="40" label="Detalles" chromeColor="#FFFFFF"
 				  click="gotoDetalle(event)" icon="@Embed('assets/grupo.png')"
 				  left.contraido="389" top.contraido="10" height.contraido="30"
+				  enabled.contraido="{ servicios.selectedIndex != -1 }"
 				  left.detalle="5" top.detalle="162" width.detalle="130" height.detalle="30"/>
 		
 		<s:Button left="10" top="10" width="120" height="40" label="Buscar" chromeColor="#9AE4FF"
@@ -177,24 +204,62 @@
 		<s:Button left="794" top="10" width="120" height="40" label="Status" chromeColor="#FFFFFF"
 				  icon="@Embed('assets/eye.png')"
 				  left.contraido="789" top.contraido="10" height.contraido="30"
+				  enabled.contraido="{ servicios.selectedIndex != -1 }"
 				  left.detalle="5" top.detalle="238" width.detalle="130" height.detalle="30"/>
 		
 		<s:Button left="522" top="10" height="40" label="Ubicacion" chromeColor="#FFFFFF"
 				  icon="@Embed('assets/ubicacion.png')"
 				  left.contraido="517" top.contraido="10" height.contraido="30"
+				  enabled.contraido="{ servicios.selectedIndex != -1 }"
 				  left.detalle="5" top.detalle="200" width.detalle="130" height.detalle="30"/>
 		
 		<s:Button left="658" top="10" height="40" label="Reclamos" chromeColor="#FFFFFF"
 				  icon="@Embed('assets/phone.png')"
 				  left.contraido="653" top.contraido="10" height.contraido="30"
+				  enabled.contraido="{ servicios.selectedIndex != -1 }"
 				  left.detalle="5" top.detalle="276" width.detalle="130" height.detalle="30"/>
 		
 		<s:Button top="10" height="40" label="Eliminar" chromeColor="#FFA9A9"
 				  icon="@Embed('assets/eliminar.png')"
 				  right.contraido="5" top.contraido="10" height.contraido="30"
+				  enabled.contraido="{ servicios.selectedIndex != -1 }"
 				  left.detalle="5" top.detalle="124" width.detalle="130" height.detalle="30"/>
 	</s:Group>
-	<s:Group includeIn="detalle" left="140" right="5" top="0" bottom="210">
+	<s:Group includeIn="detalle" left="140" right="5" top="0" height="310">
+		<s:Label x="20" y="18" fontSize="14" fontWeight="bold" text="Datos del Equipo"/>
+		<s:Label x="20" y="54" text="Descripción"/>
+		<s:Label x="20" y="104" text="Marco"/>
+		<s:TextInput x="20" y="74" width="266" editable="false"
+					 text="{servicios.selectedItem.eDescripcion}"/>
+		<s:TextInput x="20" y="124" width="266" editable="false"
+					 text="{servicios.selectedItem.eMarca}"/>
+		<s:Label x="20" y="154" text="Modelo"/>
+		<s:TextInput x="20" y="174" width="266" editable="false"
+					 text="{servicios.selectedItem.eModelo}"/>
+		<s:Label x="20" y="204" text="Serie"/>
+		<s:TextInput x="20" y="224" width="266" editable="false"
+					 text="{servicios.selectedItem.eSerie}"/>
+		<s:Label x="20" y="254" text="Categoria"/>
+		<s:TextInput x="20" y="274" width="266" editable="false"
+					 text="{servicios.selectedItem.caDescripcion}"/>
+		<s:Label x="331" y="18" fontSize="14" fontWeight="bold" text="Datos del Cliente"/>
+		<s:Label x="331" y="54" text="Nombre Completo"/>
+		<s:Label x="331" y="104" text="Dirección"/>
+		<s:TextInput x="331" y="74" width="266" editable="false"
+					 text="{servicios.selectedItem.cNombre + ' ' + servicios.selectedItem.cApellidos}"/>
+		<s:TextInput x="331" y="124" width="266" editable="false"
+					 text="{servicios.selectedItem.cDireccion}"/>
+		<s:Label x="331" y="154" text="Teléfono"/>
+		<s:TextInput x="331" y="174" width="266" editable="false"
+					 text="{servicios.selectedItem.cTelefono}"/>
+		<s:Label x="331" y="204" text="Celular"/>
+		<s:TextInput x="331" y="224" width="266" editable="false"
+					 text="{servicios.selectedItem.cCelular}"/>
+		<s:Label x="331" y="254" text="Ciudad / Estado"/>
+		<s:TextInput x="331" y="274" width="266" editable="false"
+					 text="{servicios.selectedItem.cCiudad + ' / ' + servicios.selectedItem.cEstado}"/>
+		<mx:VRule x="309" y="18" height="280"/>
+		<mx:VRule x="619" y="20" height="280"/>
 	</s:Group>
 	
 </s:Group>
