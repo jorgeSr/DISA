@@ -3,13 +3,13 @@
 			   xmlns:s="library://ns.adobe.com/flex/spark"
 			   xmlns:mx="library://ns.adobe.com/flex/mx"
 			   width="606" height="466" close="PopUpManager.removePopUp(this);"
-			   creationComplete="creationCompleteHandler(event)" title="Sucursales"
+			   creationComplete="creationCompleteHandler(event)" title="Historial de Ubicación"
 			   height.CU="390"
 			   width.options="726" height.options="444" title.options="Ubicaciones">
 	
 	<s:transitions> 
 		<s:Transition id="tran" fromState="*" toState="*" > 
-			<s:Sequence id="t1" targets="{[detalle, sucursales]}"> 
+			<s:Sequence id="t1" targets="{[detalle, ubicaciones]}"> 
 				<mx:Blur duration="100" blurXFrom="0.0" blurXTo="10.0" />
 				<mx:Parallel>
 					<mx:Move duration="150"/>
@@ -149,7 +149,7 @@
 		<s:ArrayCollection id="dp" />
 	</fx:Declarations>	
 	
-	<s:DataGrid id="sucursales" x="10" y="10" width="310" height="333" dataProvider="{dp}"
+	<s:DataGrid id="ubicaciones" x="10" y="10" width="310" height="333" dataProvider="{dp}"
 				enabled="{ currentState != 'CU' }" requestedRowCount="4"
 				width.CU="215"
 				width.options="704">

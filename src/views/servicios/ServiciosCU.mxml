@@ -38,11 +38,16 @@
 			{
 				this.servicio = servicio;			
 				this.isNew = isNew;
+				if( !isNew )
+				{
+					tipoServicioDD.selectedIndex = servicio.tipoServicio == "E" ? 0:( servicio.tipoServicio == "G" ? 1:2 );
+					tipoTraDD.selectedIndex =  servicio.tipoTrabajo == "T" ? 0:1;
+				}
 			}
 			
 			public function get lastInsertUpdateId():int{
 				
-				return ( !isNew ? remS.create.lastResult:remS.update.lastResult );	
+				return ( !isNew ? servicio.id:remS.create.lastResult );	
 			}
 			
 			protected function equipoClickHandler(event:MouseEvent):void
@@ -136,20 +141,14 @@
 				
 					Alert.show( "Los campos marcados con * son obligatorios", "Alerta" );
 					return false;
-				}
-				
-				if( int( montoTi.text ) == 0 && tipoServicioDD.selectedIndex == 2 ){
-				
-					Alert.show( "Debe indicar el monto", "Alerta" );
-					return false;
-				}
+				}				
 				
 				return true;
 			}
 			
 			protected function cuHandler(event:ResultEvent):void
 			{
-				enabled = true;				
+				enabled = true;
 				dispatchEvent( new Event('successful') );
 			}
 			
@@ -201,8 +200,8 @@
 				 text="{ servicio.sucursal == null ? '':servicio.sucursal.descripcion }"/>
 	
 	<s:TextInput id="montoTi" x="446" y="168" width="198" change="onMontoChange()"
-				 enabled="{tipoServicioDD.selectedItem.value == 'C'}" restrict="[0-9,.]" text="0"
-				 valueCommit="onMontoChange()"/>	
+				 enabled="{tipoServicioDD.selectedItem.value == 'C'}" prompt="*" restrict="[0-9,.]"
+				 valueCommit="onMontoChange()" text="{ servicio.monto }" />	
 	<s:TextArea x="10" y="82" width="309" height="52" click="equipoClickHandler(event)"
 				contentBackgroundColor="#F3FDFE" editable="false"
 				prompt="* (Click para seleccionar)"
@@ -219,21 +218,26 @@
 				  formatString="YYYY-MM-DD" monthNames="{DateUtil.monthNames}"
 				  selectedDate="{ servicio.fechaReparacionEstimada }" 
 				  change="{ servicio.fechaReparacionEstimada = fechaDF.selectedDate }"/>
+	<mx:DateField id="fechaRecepDF" x="447" y="214" width="197" dayNames="{DateUtil.dayNames}"
+				  formatString="YYYY-MM-DD" monthNames="{DateUtil.monthNames}"
+				  selectedDate="{ servicio.fechaRecepcion }" visible="{!isNew}"
+				  change="{ servicio.fechaRecepcion = fechaRecepDF.selectedDate }"/>
+	<s:Label y="30" left="335" fontWeight="bold" text="Fecha estimada de reparación*:"/>
 	<s:DropDownList id="tipoTraDD" y="76" right="10" width="198" dataProvider="{tipoTrabajo}"
 					labelField="name" change="{ servicio.tipoTrabajo = tipoTraDD.selectedItem.value }"/>
 	<s:DropDownList id="tipoServicioDD" y="119" right="10" width="198" dataProvider="{tipoServicio}" labelField="name"
 					change="{servicio.tipoServicio = tipoServicioDD.selectedItem.value; 
-					if( tipoServicioDD.selectedIndex == 2 ) montoTi.text = '0'}" />
+					if( tipoServicioDD.selectedIndex != 2 ) montoTi.text = '0'}" />
 	
-	<s:TextArea id="fallaTa" x="10" y="279" width="309" height="52" prompt="*"/>
-	<s:TextArea id="condicionTa" x="335" y="279" width="309" height="52" prompt="*"/>
-	<s:TextArea id="accesoriosTa" x="10" y="368" width="309" height="52"/>
-	<s:TextArea id="comentariosTa" x="335" y="368" width="309" height="52"/>
+	<s:TextArea id="fallaTa" x="10" y="279" width="309" height="52" prompt="*" text="{ servicio.falla }" />
+	<s:TextArea id="condicionTa" x="335" y="279" width="309" height="52" prompt="*" text="{ servicio.condision }" />
+	<s:TextArea id="accesoriosTa" x="10" y="368" width="309" height="52" text="{ servicio.accesorios }" />
+	<s:TextArea id="comentariosTa" x="335" y="368" width="309" height="52" text="{ servicio.comentarios }" />
 	<s:Label x="335" y="348" fontWeight="bold" text="Comentarios"/>
 	<s:Label x="10" y="348" fontWeight="bold" text="Accesorios"/>
 	<s:Label x="335" y="259" fontWeight="bold" text="Condición"/>
 	<s:Label x="10" y="148" fontWeight="bold" text="Cliente"/>
-	<s:Label y="30" left="335" fontWeight="bold" text="Fecha estimada de reparación*:"/>	
+	<s:Label y="214" left="335" fontWeight="bold" text="Fecha recepción*:"  visible="{!isNew}"/>	
 	<s:Label x="10" y="62" fontWeight="bold" text="Equipo"/>	
 	<s:Label x="10" y="204" fontWeight="bold" text="Tecnico Asignado"/>	
 	<s:Label x="10" y="10" fontWeight="bold" text="Sucursal de Recepción"/>

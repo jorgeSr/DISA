@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
-					   xmlns:s="library://ns.adobe.com/flex/spark" 
-					   xmlns:mx="library://ns.adobe.com/flex/mx"					   
-					   xmlns:log="views.log.*" xmlns:customcmpnts="views.customcmpnts.*"
-					   creationComplete="initApp(event)" xmlns:servicios="views.servicios.*" >
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:log="views.log.*"
+					   xmlns:customcmpnts="views.customcmpnts.*"
+					   xmlns:servicios="views.servicios.*"
+					   creationComplete="initApp(event)" currentState="logIn">
 	<fx:Script>
 		<![CDATA[
 			import com.idwa.exceptions.ZendExceptios;
@@ -43,22 +45,12 @@
 					case ".3": SucursalesCRUD( PopUpManager.createPopUp( this, SucursalesCRUD, true ) ); break;
 					
 					case ".4": ClientesCRUD( PopUpManager.createPopUp( this, ClientesCRUD, true ) ); break;
-					/*
-					case ".0": BancosCRUD( PopUpManager.createPopUp( this, BancosCRUD, true ) ); break;
-					
-					
-					
-					
-					
-					case ".3": ProveedoresCRUD( PopUpManager.createPopUp( this, ProveedoresCRUD, true ) ); break;
-					
-					case ".4": CiclosCRUD( PopUpManager.createPopUp( this, CiclosCRUD, true ) ); break;*/
 				}
 			}					
 			
 			public function logOut():void{
-				//Change State, erase all data
-				//navigateToURL(new URLRequest('../index.php'),'_self');
+				//Need to call come remote close session
+				currentState = "logIn";
 			}
 			
 		]]>

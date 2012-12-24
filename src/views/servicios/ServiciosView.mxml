@@ -19,9 +19,14 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.idwa.ds.disa.vo.Equipo;
+			import com.idwa.ds.disa.vo.Status;
+			import com.idwa.ds.disa.vo.Sucursal;
 			import com.idwa.ds.disa.vo.User;
+			import com.idwa.ds.disa.vo.detail.EquipoDetail;
 			import com.idwa.ds.disa.vo.detail.ServicioDetail;
 			import com.idwa.exceptions.ZendExceptios;
+			import com.idwa.utils.DateUtil;
 			
 			import mx.controls.Alert;
 			import mx.core.IFlexDisplayObject;
@@ -49,14 +54,70 @@
 			protected function nuevoClickHandler(nuevo:Boolean):void
 			{
 				var serviciosCrud:ServiciosCU = ServiciosCU( PopUpManager.createPopUp( this, ServiciosCU, true ) );
-				serviciosCrud.setData( ( nuevo ? new ServicioDetail():servicios.selectedItem as ServicioDetail ), nuevo );								
+				
+				if( nuevo )
+				{
+					serviciosCrud.setData( new ServicioDetail(), nuevo );	
+				}
+				else
+				{
+					var dUtil:DateUtil = new DateUtil();
+					var sd:ServicioDetail = new ServicioDetail();
+					sd.id = servicios.selectedItem.id;
+					sd.accesorios = servicios.selectedItem.accesorios;
+					
+					sd.cliente = new User();
+					sd.cliente.id = sd.clienteId = servicios.selectedItem.clienteId;
+					sd.cliente.nombre = servicios.selectedItem.cNombre;
+					sd.cliente.apellidos = servicios.selectedItem.cApellidos;
+					
+					sd.comentarios = servicios.selectedItem.comentarios;
+					sd.condision = servicios.selectedItem.condision;
+					
+					sd.equipo = new EquipoDetail();					
+					sd.equipo.descripcion = servicios.selectedItem.eDescripcion;
+					sd.equipo.marca = servicios.selectedItem.eMarca;
+					sd.equipo.modelo = servicios.selectedItem.eModelo;
+					sd.equipo.serie = sd.equipoId = servicios.selectedItem.equipoId;
+					
+					sd.falla = servicios.selectedItem.equipoId;
+					sd.fechaRecepcion = dUtil.parseDate( servicios.selectedItem.fechaRecepcion );
+					sd.fechaReparacionEstimada = dUtil.parseDate( servicios.selectedItem.fechaReparacionEstimada );
+					sd.monto = servicios.selectedItem.monto;
+					
+					sd.recibe = new User();
+					sd.recibe.id = sd.recibeId = servicios.selectedItem.recibeId;
+					sd.recibe.nombre = servicios.selectedItem.rNombre;
+					sd.recibe.apellidos = servicios.selectedItem.rApellidos;
+					
+					sd.status = new Status();
+					sd.status.status = servicios.selectedItem.stStatus;
+					sd.status.fecha = dUtil.parseDate( servicios.selectedItem.stFecha );
+					sd.status.id = sd.statusId = servicios.selectedItem.statusId;
+					
+					sd.sucursal = new Sucursal();
+					sd.sucursal.descripcion =  servicios.selectedItem.suDescripcion;
+					sd.sucursal.id = sd.sucursalId = servicios.selectedItem.sucursalId;
+					
+					sd.tecnico = new User();
+					sd.tecnico.id = sd.tecnicoId = servicios.selectedItem.tecnicoId;
+					sd.tecnico.nombre = servicios.selectedItem.tNombre;
+					sd.tecnico.apellidos = servicios.selectedItem.tApellidos;
+					
+					sd.tipoServicio = servicios.selectedItem.tipoServicio;
+					sd.tipoTrabajo = servicios.selectedItem.tipoTrabajo;
+					serviciosCrud.setData( sd, nuevo );
+				}
+												
 				serviciosCrud.addEventListener( "successful", function(event:Event):void{
 					
 					Alert.show( "Se realizaron los cambios con exito !" );
-					remS.getById( event.target.lastInsertUpdateId );
+					var sdSearch:ServicioDetail = new ServicioDetail();
+					sdSearch.id = event.target.lastInsertUpdateId;
+					remS.search( sdSearch );
 					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
 				}); 
-			}
+			}			
 			
 			protected function confirmDelete():void
 			{
@@ -85,12 +146,6 @@
 				dp.refresh();
 			}
 			
-			protected function getById_resultHandler(event:ResultEvent):void
-			{
-				enabled = true;
-				dp = new ArrayCollection( event.result as Array );	
-			}
-			
 			protected function getFullName(item:Object, column:AdvancedDataGridColumn):String
 			{				
 				switch( column.dataTipField ){
@@ -107,7 +162,33 @@
 				currentState = ( currentState == "detalle" ? "contraido":"detalle" );
 			}
 			
+			protected function getTipoTrabajoLabel(text:String):String
+			{			
+				switch(text)
+				{
+					case "D": return "Domicilio"; break;
+					case "T": return "Taller"; break;	
+					default: return "n/a"; break;
+				}
+			}
 			
+			protected function getTipoServicioLabel(text:String):String
+			{			
+				switch(text)
+				{
+					case "E": return "Garantia Extendida"; break;
+					case "G": return "Garantia"; break;
+					case "C": return "Con Cargo"; break;
+					default: return "n/a"; break;
+				}
+			}
+			
+			protected function search_resultHandler(event:ResultEvent):void
+			{
+				enabled = true;
+				dp = event.result == null ? new ArrayCollection():new ArrayCollection( event.result as Array );
+				dp.refresh();
+			}
 			
 		]]>
 	</fx:Script>
@@ -121,11 +202,15 @@
 						fault="myRemote_faultHandler(event)" showBusyCursor="true"
 						invoke="enabled=false;">
 			
-			<s:method name="getById" result="getById_resultHandler(event)"/>
 			<s:method name="remove" result="remove_resultHandler(event)" />
+			<s:method name="search" result="search_resultHandler(event)" />
 		</s:RemoteObject>
 		
-		<s:ArrayCollection id="dp" />	
+		<s:ArrayCollection id="dp" />
+		
+		<s:CurrencyFormatter id="currencyF" currencySymbol="$"
+							 useCurrencySymbol="true"
+							 useGrouping="true"/>
 	</fx:Declarations>
 	
 	<!--
@@ -144,7 +229,7 @@
 						 minHeight="400" dataProvider="{dp}" designViewDataType="tree"
 						 left.contraido="5" right.contraido="5" top.contraido="47"
 						 bottom.contraido="5"
-						 left.detalle="5" right.detalle="5" top.detalle="315" bottom.detalle="5"
+						 left.detalle="5" right.detalle="5" top.detalle="365" bottom.detalle="5"
 						 minHeight.detalle="200">
 		
 		<mx:groupedColumns>
@@ -181,14 +266,15 @@
 		<s:Button left="138" top="10" width="120" height="40" label="Nuevo" chromeColor="#D5FE8E"
 				  icon="@Embed('assets/nuevo.png')"
 				  left.contraido="133" top.contraido="10" height.contraido="30"
-				  click.contraido="nuevoClickHandler(true)"
+				  click="nuevoClickHandler(true)"
 				  left.detalle="5" top.detalle="86" width.detalle="130" height.detalle="30"/>
 		
 		<s:Button left="266" top="10" width="120" height="40" label="Editar" chromeColor="#FFF58B"
 				  icon="@Embed('assets/editar.png')"
 				  left.contraido="261" top.contraido="10" height.contraido="30"
 				  enabled.contraido="{ servicios.selectedIndex != -1 }"
-				  left.detalle="5" top.detalle="48" width.detalle="130" height.detalle="30"/>
+				  left.detalle="5" top.detalle="48" width.detalle="130" height.detalle="30"
+				  click="nuevoClickHandler(false)"/>
 		
 		<s:Button left="394" top="10" width="120" height="40" label="Detalles" chromeColor="#FFFFFF"
 				  click="gotoDetalle(event)" icon="@Embed('assets/grupo.png')"
@@ -220,46 +306,77 @@
 				  left.detalle="5" top.detalle="276" width.detalle="130" height.detalle="30"/>
 		
 		<s:Button top="10" height="40" label="Eliminar" chromeColor="#FFA9A9"
-				  icon="@Embed('assets/eliminar.png')"
+				  icon="@Embed('assets/eliminar.png')" click="{confirmDelete()}"
 				  right.contraido="5" top.contraido="10" height.contraido="30"
 				  enabled.contraido="{ servicios.selectedIndex != -1 }"
 				  left.detalle="5" top.detalle="124" width.detalle="130" height.detalle="30"/>
 	</s:Group>
-	<s:Group includeIn="detalle" left="140" right="5" top="0" height="310">
-		<s:Label x="20" y="18" fontSize="14" fontWeight="bold" text="Datos del Equipo"/>
-		<s:Label x="20" y="54" text="Descripción"/>
-		<s:Label x="20" y="104" text="Marco"/>
-		<s:TextInput x="20" y="74" width="266" editable="false"
+	<s:Group includeIn="detalle" left="140" right="5" top="1" height="365">
+		<s:Label x="295" y="19" fontSize="14" fontWeight="bold" text="Datos del Equipo"/>
+		<s:Label x="295" y="55" text="Descripción"/>
+		<s:Label x="295" y="105" text="Marco"/>
+		<s:TextInput x="295" y="75" width="235" editable="false"
 					 text="{servicios.selectedItem.eDescripcion}"/>
-		<s:TextInput x="20" y="124" width="266" editable="false"
+		<s:TextInput x="629" y="16" width="207" editable="false"
+					 text="{currencyF.format( servicios.selectedItem.monto )}"/>
+		<s:TextInput x="872" y="39" width="240" editable="false"
+					 text="{servicios.selectedItem.fechaReparacionEstimada}"/>
+		<s:TextInput x="872" y="92" width="240" editable="false"
+					 text="{servicios.selectedItem.fechaRecepcion}"/>
+		<s:TextInput x="872" y="145" width="240" editable="false"
+					 text="{servicios.selectedItem.rNombre + ' ' + servicios.selectedItem.rApellidos}"/>
+		<s:TextInput x="872" y="201" width="240" editable="false"
+					 text="{servicios.selectedItem.stStatus}"/>
+		<s:Label x="872" y="181" fontWeight="normal" text="Status Actual"/>
+		<s:Label x="871" y="125" fontWeight="normal" text="Recibio"/>
+		<s:Label x="872" y="19" fontWeight="normal" text="Fecha de Reparación Estimada"/>
+		<s:Label x="570" y="21" fontWeight="normal" text="Monto"/>
+		<s:TextInput x="295" y="125" width="235" editable="false"
 					 text="{servicios.selectedItem.eMarca}"/>
-		<s:Label x="20" y="154" text="Modelo"/>
-		<s:TextInput x="20" y="174" width="266" editable="false"
+		<s:Label x="295" y="155" text="Modelo"/>
+		<s:TextInput x="295" y="175" width="235" editable="false"
 					 text="{servicios.selectedItem.eModelo}"/>
-		<s:Label x="20" y="204" text="Serie"/>
-		<s:TextInput x="20" y="224" width="266" editable="false"
+		<s:Label x="295" y="205" text="Serie"/>
+		<s:TextInput x="295" y="225" width="235" editable="false"
 					 text="{servicios.selectedItem.eSerie}"/>
-		<s:Label x="20" y="254" text="Categoria"/>
-		<s:TextInput x="20" y="274" width="266" editable="false"
+		<s:Label x="295" y="255" text="Categoria"/>
+		<s:TextInput x="295" y="275" width="235" editable="false"
 					 text="{servicios.selectedItem.caDescripcion}"/>
-		<s:Label x="331" y="18" fontSize="14" fontWeight="bold" text="Datos del Cliente"/>
-		<s:Label x="331" y="54" text="Nombre Completo"/>
-		<s:Label x="331" y="104" text="Dirección"/>
-		<s:TextInput x="331" y="74" width="266" editable="false"
+		<s:Label x="295" y="305" text="Ubicación Actual"/>
+		<s:TextInput x="295" y="325" width="235" editable="false"
+					 text="{servicios.selectedItem.suDescripcion}"/>
+		<s:Label x="20" y="69" fontSize="14" fontWeight="bold" text="Datos del Cliente"/>
+		<s:Label x="20" y="105" text="Nombre Completo"/>
+		<s:Label x="20" y="17" text="{ 'Tipo de Trabajo: ' + getTipoTrabajoLabel(servicios.selectedItem.tipoTrabajo)}"/>
+		<s:Label x="20" y="38" text="{ 'Tipo de Servcio: ' + getTipoServicioLabel(servicios.selectedItem.tipoServicio)}"/>
+		<s:Label x="20" y="155" text="Dirección"/>
+		<s:TextInput x="20" y="125" width="235" editable="false"
 					 text="{servicios.selectedItem.cNombre + ' ' + servicios.selectedItem.cApellidos}"/>
-		<s:TextInput x="331" y="124" width="266" editable="false"
+		<s:TextInput x="20" y="175" width="235" editable="false"
 					 text="{servicios.selectedItem.cDireccion}"/>
-		<s:Label x="331" y="154" text="Teléfono"/>
-		<s:TextInput x="331" y="174" width="266" editable="false"
+		<s:Label x="20" y="205" text="Teléfono"/>
+		<s:TextInput x="20" y="225" width="235" editable="false"
 					 text="{servicios.selectedItem.cTelefono}"/>
-		<s:Label x="331" y="204" text="Celular"/>
-		<s:TextInput x="331" y="224" width="266" editable="false"
+		<s:Label x="20" y="255" text="Celular"/>
+		<s:TextInput x="20" y="275" width="235" editable="false"
 					 text="{servicios.selectedItem.cCelular}"/>
-		<s:Label x="331" y="254" text="Ciudad / Estado"/>
-		<s:TextInput x="331" y="274" width="266" editable="false"
+		<s:Label x="20" y="305" text="Ciudad / Estado"/>
+		<s:TextInput x="20" y="325" width="235" editable="false"
 					 text="{servicios.selectedItem.cCiudad + ' / ' + servicios.selectedItem.cEstado}"/>
-		<mx:VRule x="309" y="18" height="280"/>
-		<mx:VRule x="619" y="20" height="280"/>
+		<mx:VRule x="273" y="20" height="340"/>
+		<mx:VRule x="549" y="19" height="340"/>
+		<mx:VRule x="854" y="21" height="340"/>
+		<s:Label x="570" y="51" fontWeight="normal" text="Falla"/>
+		<s:Label x="872" y="72" fontWeight="normal" text="Fecha de Recepción"/>
+		<s:TextArea x="570" y="69" width="266" height="50" text="{servicios.selectedItem.falla}"/>
+		<s:Label x="570" y="127" fontWeight="normal" text="Condición"/>
+		<s:TextArea x="570" y="145" width="266" height="50" text="{servicios.selectedItem.condision}"/>
+		<s:Label x="570" y="203" fontWeight="normal" text="Accesorios"/>
+		<s:TextArea x="570" y="221" width="266" height="50"
+					text="{servicios.selectedItem.accesorios}"/>
+		<s:Label x="570" y="279" fontWeight="normal" text="Comentarios"/>
+		<s:TextArea x="570" y="297" width="266" height="50"
+					text="{servicios.selectedItem.comentarios}"/>
 	</s:Group>
 	
 </s:Group>
