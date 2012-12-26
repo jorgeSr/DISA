@@ -45,6 +45,8 @@
 					case ".3": SucursalesCRUD( PopUpManager.createPopUp( this, SucursalesCRUD, true ) ); break;
 					
 					case ".4": ClientesCRUD( PopUpManager.createPopUp( this, ClientesCRUD, true ) ); break;
+					
+					case ".5": ClientesCRUD( PopUpManager.createPopUp( this, ClientesCRUD, true ) ); break;
 				}
 			}					
 			

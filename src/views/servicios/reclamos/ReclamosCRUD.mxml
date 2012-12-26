@@ -2,14 +2,13 @@
 <s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
 			   xmlns:s="library://ns.adobe.com/flex/spark"
 			   xmlns:mx="library://ns.adobe.com/flex/mx"
-			   width="606" height="466" close="PopUpManager.removePopUp(this);"
-			   creationComplete="creationCompleteHandler(event)" title="Sucursales"
-			   height.CU="390"
-			   width.options="726" height.options="444" title.options="Reclamos">
+			   width="606"  close="PopUpManager.removePopUp(this);"
+			   creationComplete="{PopUpManager.centerPopUp(this)}" title="Reclamos"
+			   width.options="860" height="488" >
 	
 	<s:transitions> 
 		<s:Transition id="tran" fromState="*" toState="*" > 
-			<s:Sequence id="t1" targets="{[detalle, sucursales]}"> 
+			<s:Sequence id="t1" targets="{[detalle, reportes]}"> 
 				<mx:Blur duration="100" blurXFrom="0.0" blurXTo="10.0" />
 				<mx:Parallel>
 					<mx:Move duration="150"/>
@@ -23,8 +22,10 @@
 	<fx:Script>
 		
 		<![CDATA[			
-			import com.idwa.ds.disa.vo.Sucursal;
+			import com.idwa.ds.disa.vo.Reporte;
+			import com.idwa.ds.disa.vo.detail.ServicioDetail;
 			import com.idwa.exceptions.ZendExceptios;
+			import com.idwa.utils.DateUtil;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
@@ -37,15 +38,16 @@
 			[Bindable]
 			public var selMode:Boolean = false;
 			[Bindable]
-			public var sucursal:Sucursal = new Sucursal();
+			protected var reporte:Reporte = new Reporte();
+			protected var servicio:ServicioDetail;
 			
 			//0:default, 1:create, 2:update
 			public var createUpdate:int = 0; 
 			
-			protected function creationCompleteHandler(event:FlexEvent):void
+			public function init(srv:ServicioDetail):void
 			{
-				PopUpManager.centerPopUp(this);
-				rem.findAll();
+				servicio = srv;
+				rem.findByServicioId(servicio.id);
 			}						
 			
 			protected function faultHandler(event:FaultEvent):void
@@ -57,22 +59,30 @@
 			protected function createUpdateHandler(nuevo:Boolean):void
 			{
 				currentState = "CU";
+				reporte = new Reporte();
+				reporte.servicioId = servicio.id;
 				
 				if( nuevo ){
-					
-					sucursal = new Sucursal();
+										
 					guardar.label = "CREAR";
 					createUpdate = 1;
 					
 				}else{
 					
-					sucursal = sucursales.selectedItem as Sucursal;					
+					var dUtil:DateUtil = new DateUtil();
+					reporte.id = reportes.selectedItem.id;
+					reporte.atiendeId = reportes.selectedItem.atiendeId;
+					reporte.fecha = dUtil.parseDate( reportes.selectedItem.fecha );
+					reporte.descripcion = reportes.selectedItem.descripcion;
+					reporte.servicioId = reportes.selectedItem.servicioId;
+					reporte.statusId = reportes.selectedItem.statusId;
+					reporte.titulo = reportes.selectedItem.titulo;
 					guardar.label = "EDITAR";
 					createUpdate = 2;
 				}
 			}
 			
-			protected function findAllHandler(event:ResultEvent):void
+			protected function findByServicioId_resultHandler(event:ResultEvent):void
 			{
 				enabled = true;
 				dp = new ArrayCollection( event.result as Array );
@@ -87,26 +97,26 @@
 					Alert.OK|Alert.CANCEL,this, 
 					function(event:CloseEvent):void{
 						if(event.detail==Alert.OK)	
-							rem.remove( sucursales.selectedItem.id );
+							rem.remove( reportes.selectedItem.id );
 					},null,Alert.OK);
 			}
 			
 			protected function process(event:MouseEvent):void
 			{
 				
-				if( sucursalTa.text == "" ){
+				if( tituloTa.text == "" ){
 					
 					Alert.show("Los campos marcados con * son obligatorios","Error");
 					return;
 				}
 					
-				sucursal.descripcion = sucursalTa.text;
-				sucursal.direccion = direccionTa.text;
+				reporte.descripcion = tituloTa.text;
+				reporte.titulo = descripcionTa.text;
 				
 				if( createUpdate == 1 )	
-					rem.create( sucursal );										
+					rem.create( reporte );										
 				else					
-					rem.update( sucursal );
+					rem.update( reporte );
 				
 			}
 			
@@ -121,10 +131,10 @@
 				enabled = true;								
 				
 				currentState = 'options';				
-				direccionTa.text = sucursalTa.text = null;
+				descripcionTa.text = tituloTa.text = null;
 				editarBtn.enabled = removeBtn.enabled = selbtn.enabled = false;
 				Alert.show( 'Se realizaron los cambios correctamente',"Alerta");
-				rem.findAll();
+				rem.findByServicioId(servicio.id);
 			}
 			
 		]]>
@@ -136,11 +146,11 @@
 	</s:states>
 	
 	<fx:Declarations>
-		<s:RemoteObject id="rem" destination="zend" source="sucursalC" 
+		<s:RemoteObject id="rem" destination="zend" source="reporteC" 
 						fault="faultHandler(event)" showBusyCursor="true"
 						invoke="enabled=false;">
 			
-			<s:method name="findAll" result="findAllHandler(event)"/>
+			<s:method name="findByServicioId" result="findByServicioId_resultHandler(event)"/>
 			<s:method name="remove" result="rcuHandler(event)" />
 			<s:method name="create" result="rcuHandler(event)" />
 			<s:method name="update" result="rcuHandler(event)" />
@@ -149,55 +159,68 @@
 		<s:ArrayCollection id="dp" />
 	</fx:Declarations>	
 	
-	<s:DataGrid id="sucursales" x="10" y="10" width="310" height="333" dataProvider="{dp}"
+	<s:DataGrid id="reportes" x="10" y="10" width="310" height="333" dataProvider="{dp}"
 				enabled="{ currentState != 'CU' }" requestedRowCount="4"
-				width.CU="215"
-				width.options="704">
+				width.CU="215" height.CU="435"
+				width.options="473" height.options="391">
 		
 		<s:columns>
 			<s:ArrayList>
-				<s:GridColumn dataField="id" headerText="ID" width="60"></s:GridColumn>
-				<s:GridColumn dataField="descripcion" headerText="Descripcion"></s:GridColumn>
-				<s:GridColumn dataField="direccion" headerText="Direccion"></s:GridColumn>
+				<s:GridColumn dataField="fecha" headerText="Fecha" width="130"></s:GridColumn>
+				<s:GridColumn dataField="titulo" headerText="Titulo"></s:GridColumn>
+				<s:GridColumn dataField="stStatus" headerText="Status"></s:GridColumn>
 			</s:ArrayList>
 		</s:columns>
 	</s:DataGrid>
 	
-	<s:Button includeIn="options" x="9" y="358" width="98" height="36" label="Nuevo"
+	<s:Button includeIn="options" x="10" y="409" width="98" height="36" label="Nuevo"
 			  chromeColor="#95C3EA" click="createUpdateHandler(true)"
 			  icon="@Embed('assets/nuevo.png')"/>
 	
-	<s:Button id="editarBtn" includeIn="options" x="115" y="358" width="98" height="36"
+	<s:Button id="editarBtn" includeIn="options" x="116" y="409" width="98" height="36"
 			  label="Editar" chromeColor="#EAE195" click="createUpdateHandler(false)"
-			  enabled="{sucursales.selectedIndex != -1}"
+			  enabled="{reportes.selectedIndex != -1}"
 			  icon="@Embed('assets/editar.png')"/>
 	
-	<s:Button id="removeBtn" includeIn="options" x="221" y="358" width="108" height="36"
+	<s:Button id="removeBtn" includeIn="options" x="222" y="409" width="108" height="36"
 			  label="Eliminar" chromeColor="#E67373" click="confirmDeleteCliente()"
-			  enabled="{sucursales.selectedIndex != -1}"
+			  enabled="{reportes.selectedIndex != -1}"
 			  icon="@Embed('assets/eliminar.png')"/>
 	
-	<s:Button id="selbtn" includeIn="options" x="616" y="357" width="98" height="36"
+	<s:Button id="selbtn" includeIn="options" x="750" y="409" width="98" height="36"
 			  label="Seleccionar" chromeColor="#F6F7F7"
 			  click="{dispatchEvent( new Event('itemSelected') )}"
-			  enabled="{selMode &amp;&amp; sucursales.selectedIndex != -1}"/>		
+			  enabled="{selMode &amp;&amp; reportes.selectedIndex != -1}"/>		
 	
 	<s:Group id="detalle" x="233" y="10" width="361" height="333"
-			 includeIn="CU"
-			 enabled="{ sucursales.selectedIndex != -1 || currentState == 'CU' }">
+			 enabled="{ reportes.selectedIndex != -1 || currentState == 'CU' }"
+			 height.CU="435"
+			 x.options="487" y.options="10" height.options="391">
 		
-		<s:Label x="10" y="10" text="Descripcion *"/>
-		<s:TextArea id="sucursalTa" y="29" left="10" right="10" height="60" prompt="*"
-					text="{ sucursal.descripcion }"/>				
+		<s:Label x="10" y="10" text="Descripcion *"
+				 text.CU="Titulo*"
+				 x.options="10" y.options="62" text.options="Titulo"/>
+		<s:TextInput id="tituloTa" y="29" left="10" right="10" prompt="*"
+					 text="{ reporte.titulo }"
+					 y.options="81" left.options="10" right.options="10"
+					 text.options="{ reportes.selectedItem.titulo }"/>				
+		<s:Label includeIn="options" x="10" y="10" text="Atendio"/>
+		<s:TextInput id="atendioTa" includeIn="options" y="29" left="10" right="10" prompt="*"
+					 text="{ reportes.selectedItem.atNombre + ' ' + reportes.selectedItem.atApellidos }"/>
 		
-		<s:Label x="10" y="97" text="Direccion"/>
-		<s:TextArea id="direccionTa" y="117" left="10" right="10" height="60" 
-					text="{ sucursal.direccion }"/>
+		<s:Label x="10" y="97" text="Direccion"
+				 x.CU="10" y.CU="59" text.CU="Descripción*"
+				 x.options="10" y.options="115" text.options="Descripción"/>
+		<s:TextArea id="descripcionTa" y="117" left="10" right="10" height="60"
+					text="{ reporte.descripcion }" prompt="*"
+					y.CU="79" left.CU="10" right.CU="10" height.CU="186"
+					y.options="135" left.options="10" right.options="10" height.options="246"
+					text.options="{ reportes.selectedItem.descripcion }"/>
 		
-		<s:Button id="guardar" x="253" y="293" width="98" height="30" chromeColor="#95EAC7"
-				  click="process(event)" fontWeight="bold"/>
+		<s:Button id="guardar" includeIn="CU" x="253" y="395" width="98" height="30"
+				  chromeColor="#95EAC7" click="process(event)" fontWeight="bold"/>
 		
-		<s:Button id="cancelar" x="10" y="293" width="98" height="30" label="Cancelar"
+		<s:Button id="cancelar" includeIn="CU" x="10" y="395" width="98" height="30" label="Cancelar"
 				  chromeColor="#EAE195" click="cancel(event)"/>
 	</s:Group>		
 	

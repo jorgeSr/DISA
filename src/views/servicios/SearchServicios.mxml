@@ -118,8 +118,15 @@
 		
 		<s:ArrayCollection id="status" >
 			<fx:Object name="Todos" value="0" />
-			<fx:Object name="Recibido" value="1" />
-			<fx:Object name="En otro lado" value="2" />
+			<fx:Object name="Recibido" value="RECI" />
+			<fx:Object name="Diagnosticado" value="DIAG" />
+			<fx:Object name="Presupuestado" value="PREP" />
+			<fx:Object name="En Espera de Refacciones" value="EREF" />			
+			<fx:Object name="Refacciones Recibidas" value="RREF" />
+			<fx:Object name="Aprovado por Calidad" value="ACAL" />
+			<fx:Object name="Rechazado por Calidad" value="RCAL" />
+			<fx:Object name="Listo pata Recolección" value="LREC" />
+			<fx:Object name="Terminado" value="TERM" />
 		</s:ArrayCollection>	
 	</fx:Declarations>
 		
@@ -134,7 +141,7 @@
 	<s:TextInput y="174" left="10" right="10" click="tecnicoClickHandler(event)"
 				 contentBackgroundColor="#F3FDFE" editable="false"
 				 prompt="* (Click para seleccionar)"
-				 text="{ servicio.cliente == null ? '':servicio.tecnico.nombre + ' ' + servicio.tecnico.apellidos }"/>
+				 text="{ servicio.tecnico == null ? '':servicio.tecnico.nombre + ' ' + servicio.tecnico.apellidos }"/>
 	<s:DropDownList id="tipoTraDD" y="231" left="10" right="10" selectedIndex="0"
 					change="{servicio.tipoTrabajo = tipoTraDD.selectedItem.value }"
 					dataProvider="{tipoTrabajo}" labelField="name"/>

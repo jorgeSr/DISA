@@ -36,6 +36,10 @@
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
 			
+			import views.servicios.reclamos.ReclamosCRUD;
+			import views.servicios.status.StatusCRUD;
+			import views.servicios.ubicaciones.UbicacionesCRUD;
+			
 			[Bindable]
 			private var servicio:ServicioDetail = new ServicioDetail();
 			[Bindable]
@@ -190,6 +194,34 @@
 				dp.refresh();
 			}
 			
+			protected function reclamos_clickHandler(event:MouseEvent):void
+			{
+				var servicioTmp:ServicioDetail = new ServicioDetail();
+				servicioTmp.id = servicios.selectedItem.id;
+				var reportes:ReclamosCRUD = ReclamosCRUD( PopUpManager.createPopUp( this, ReclamosCRUD, true ) );
+				reportes.init( servicioTmp );
+			}
+			
+			protected function status_clickHandler(event:MouseEvent):void
+			{
+				var status:StatusCRUD = StatusCRUD( PopUpManager.createPopUp( this, StatusCRUD, true ) );
+				status.addEventListener( "successful", function(event:Event):void{
+					
+					//Cambia el status actual en el servicio seleccionado
+					//PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function ubicacion_clickHandler(event:MouseEvent):void
+			{
+				var ubicaciones:UbicacionesCRUD = UbicacionesCRUD( PopUpManager.createPopUp( this, UbicacionesCRUD, true ) );
+				ubicaciones.addEventListener( "successful", function(event:Event):void{
+					
+					//Cambia la ubicacion actual en el servicio seleccionado
+					//PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
 		]]>
 	</fx:Script>
 	<s:states>
@@ -291,16 +323,18 @@
 				  icon="@Embed('assets/eye.png')"
 				  left.contraido="789" top.contraido="10" height.contraido="30"
 				  enabled.contraido="{ servicios.selectedIndex != -1 }"
-				  left.detalle="5" top.detalle="238" width.detalle="130" height.detalle="30"/>
+				  left.detalle="5" top.detalle="238" width.detalle="130" height.detalle="30"
+				  click="status_clickHandler(event)"/>
 		
 		<s:Button left="522" top="10" height="40" label="Ubicacion" chromeColor="#FFFFFF"
 				  icon="@Embed('assets/ubicacion.png')"
 				  left.contraido="517" top.contraido="10" height.contraido="30"
 				  enabled.contraido="{ servicios.selectedIndex != -1 }"
-				  left.detalle="5" top.detalle="200" width.detalle="130" height.detalle="30"/>
+				  left.detalle="5" top.detalle="200" width.detalle="130" height.detalle="30"
+				  click="ubicacion_clickHandler(event)"/>
 		
 		<s:Button left="658" top="10" height="40" label="Reclamos" chromeColor="#FFFFFF"
-				  icon="@Embed('assets/phone.png')"
+				  icon="@Embed('assets/phone.png')" click="reclamos_clickHandler(event)"
 				  left.contraido="653" top.contraido="10" height.contraido="30"
 				  enabled.contraido="{ servicios.selectedIndex != -1 }"
 				  left.detalle="5" top.detalle="276" width.detalle="130" height.detalle="30"/>

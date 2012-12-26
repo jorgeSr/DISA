@@ -66,7 +66,7 @@
 					
 				}else{
 					
-					sucursal = sucursales.selectedItem as Sucursal;					
+					sucursal = ubicaciones.selectedItem as Sucursal;					
 					guardar.label = "EDITAR";
 					createUpdate = 2;
 				}
@@ -87,7 +87,7 @@
 					Alert.OK|Alert.CANCEL,this, 
 					function(event:CloseEvent):void{
 						if(event.detail==Alert.OK)	
-							rem.remove( sucursales.selectedItem.id );
+							rem.remove( ubicaciones.selectedItem.id );
 					},null,Alert.OK);
 			}
 			
@@ -169,22 +169,22 @@
 	
 	<s:Button id="editarBtn" includeIn="options" x="115" y="358" width="98" height="36"
 			  label="Editar" chromeColor="#EAE195" click="createUpdateHandler(false)"
-			  enabled="{sucursales.selectedIndex != -1}"
+			  enabled="{ubicaciones.selectedIndex != -1}"
 			  icon="@Embed('assets/editar.png')"/>
 	
 	<s:Button id="removeBtn" includeIn="options" x="221" y="358" width="108" height="36"
 			  label="Eliminar" chromeColor="#E67373" click="confirmDeleteCliente()"
-			  enabled="{sucursales.selectedIndex != -1}"
+			  enabled="{ubicaciones.selectedIndex != -1}"
 			  icon="@Embed('assets/eliminar.png')"/>
 	
 	<s:Button id="selbtn" includeIn="options" x="616" y="357" width="98" height="36"
 			  label="Seleccionar" chromeColor="#F6F7F7"
 			  click="{dispatchEvent( new Event('itemSelected') )}"
-			  enabled="{selMode &amp;&amp; sucursales.selectedIndex != -1}"/>		
+			  enabled="{selMode &amp;&amp; ubicaciones.selectedIndex != -1}"/>		
 	
 	<s:Group id="detalle" x="233" y="10" width="361" height="333"
 			 includeIn="CU"
-			 enabled="{ sucursales.selectedIndex != -1 || currentState == 'CU' }">
+			 enabled="{ ubicaciones.selectedIndex != -1 || currentState == 'CU' }">
 		
 		<s:Label x="10" y="10" text="Descripcion *"/>
 		<s:TextArea id="sucursalTa" y="29" left="10" right="10" height="60" prompt="*"
