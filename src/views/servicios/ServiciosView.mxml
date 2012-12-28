@@ -310,7 +310,7 @@
 				  click="nuevoClickHandler(false)"/>
 		
 		<s:Button left="394" top="10" width="120" height="40" label="Detalles" chromeColor="#FFFFFF"
-				  icon="@Embed('assets/grupo.png')"
+				  icon="@Embed('assets/grupo.png')" click="gotoDetalle(event)"
 				  left.contraido="389" top.contraido="10" height.contraido="30"
 				  enabled.contraido="{ servicios.selectedIndex != -1 }"
 				  left.detalle="5" top.detalle="162" width.detalle="130" height.detalle="30"/>
