@@ -286,13 +286,13 @@
 		
 		<s:columns>
 			<s:ArrayList>
-				<s:GridColumn dataField="id" headerText="ID"></s:GridColumn>
+				<s:GridColumn dataField="id" headerText="ID" width="60"></s:GridColumn>
 				<s:GridColumn dataField="usuario" headerText="Usuario"></s:GridColumn>
 				<s:GridColumn dataField="nombre" headerText="Nombre"></s:GridColumn>
 				<s:GridColumn dataField="apellidos" headerText="Apellidos"></s:GridColumn>
 				<s:GridColumn dataField="email" headerText="E-Mail"></s:GridColumn>
 				<s:GridColumn dataField="tipo" headerText="Tipo" labelFunction="getTipo" ></s:GridColumn>
-				<s:GridColumn dataField="active" headerText="Activo" labelFunction="getActivo" width="50" ></s:GridColumn>
+				<s:GridColumn dataField="active" headerText="Activo" labelFunction="getActivo" ></s:GridColumn>
 			</s:ArrayList>
 		</s:columns>
 	</s:DataGrid>

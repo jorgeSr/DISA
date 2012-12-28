@@ -5,7 +5,7 @@
 			   width="606" height="466" close="PopUpManager.removePopUp(this);"
 			   creationComplete="creationCompleteHandler(event)" title="Historial de Ubicación"
 			   height.CU="390"
-			   width.options="726" height.options="444" title.options="Ubicaciones">
+			   width.options="916" height.options="438" >
 	
 	<s:transitions> 
 		<s:Transition id="tran" fromState="*" toState="*" > 
@@ -23,30 +23,51 @@
 	<fx:Script>
 		
 		<![CDATA[			
+			import com.idwa.ds.disa.vo.EquipoUbicacion;
 			import com.idwa.ds.disa.vo.Sucursal;
 			import com.idwa.exceptions.ZendExceptios;
+			import com.idwa.utils.DateUtil;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.IFlexDisplayObject;
 			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
 			import mx.managers.PopUpManager;
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
 			
+			import views.sucursales.SucursalesCRUD;
+			import views.usuarios.ClientesCRUD;
+			
 			[Bindable]
 			public var selMode:Boolean = false;
 			[Bindable]
-			public var sucursal:Sucursal = new Sucursal();
+			public var ubicacion:EquipoUbicacion = new EquipoUbicacion();
+			[Bindable]
+			protected var servicioId:int;
+			[Bindable]
+			public var currentSucursalSalidaId:int;
+			[Bindable]
+			public var currentSucursalSalida:String;
 			
-			//0:default, 1:create, 2:update
+			//0:default, 1:create, 2:update, 3:Recibir
+			[Bindable]
 			public var createUpdate:int = 0; 
 			
 			protected function creationCompleteHandler(event:FlexEvent):void
 			{
-				PopUpManager.centerPopUp(this);
-				rem.findAll();
+				PopUpManager.centerPopUp(this);				
 			}						
+			
+			public function setData(sid:int, suc:String, sucId:int):void
+			{
+				servicioId = sid;
+				currentSucursalSalida = suc;
+				currentSucursalSalidaId = sucId;
+				rem.findAll( servicioId );
+			}
 			
 			protected function faultHandler(event:FaultEvent):void
 			{				
@@ -54,21 +75,53 @@
 				Alert.show( ( event.fault.faultString == '' ? ZendExceptios.getFaultString( event.fault.faultCode ):event.fault.faultString  ) , "Error" );
 			}
 			
-			protected function createUpdateHandler(nuevo:Boolean):void
-			{
+			protected function createUpdateHandler(nuevo:Boolean, recibir:Boolean = false):void
+			{				
 				currentState = "CU";
+				entradaTi.text = "";
+				ubicacion = new EquipoUbicacion();
+				ubicacion.servicioId = servicioId;
 				
 				if( nuevo ){
-					
-					sucursal = new Sucursal();
+										
+					ubicacion.salidaSucursalId = currentSucursalSalidaId;
+					salidaTi.text = currentSucursalSalida;
 					guardar.label = "CREAR";
 					createUpdate = 1;
 					
-				}else{
+				}else {
 					
-					sucursal = ubicaciones.selectedItem as Sucursal;					
-					guardar.label = "EDITAR";
-					createUpdate = 2;
+					var dUtil:DateUtil = new DateUtil();
+					ubicacion.entradaSucursalId = ubicaciones.selectedItem.entradaSucursalId;
+					ubicacion.fechaOrden = dUtil.parseDate( ubicaciones.selectedItem.fechaOrden );
+					ubicacion.fechaRecibe = dUtil.parseDate( ubicaciones.selectedItem.fechaRecibe );
+					ubicacion.id = ubicaciones.selectedItem.id;
+					ubicacion.ordenaId = ubicaciones.selectedItem.ordenaId;
+					ubicacion.recibeId = ubicaciones.selectedItem.recibeId;
+					ubicacion.salidaSucursalId = ubicaciones.selectedItem.salidaSucursalId;
+					ubicacion.servicioId = ubicaciones.selectedItem.servicioId;
+					//PROVIDE VISUAL ELEMTNS DATA
+					if( ubicaciones.selectedItem.orNombre != null )
+						ordenaTi.text = ubicaciones.selectedItem.orNombre + ' ' + ubicaciones.selectedItem.orApellidos;
+					
+					if( ubicaciones.selectedItem.saDescripcion != null )
+						salidaTi.text = ubicaciones.selectedItem.saDescripcion;
+					
+					if( ubicaciones.selectedItem.reNombre != null )
+						recibeTi.text = ubicaciones.selectedItem.reNombre + ' ' + ubicaciones.selectedItem.reApellidos;
+					
+					if( ubicaciones.selectedItem.enDescripcion != null )
+						entradaTi.text = ubicaciones.selectedItem.enDescripcion;
+					
+					if( recibir ){
+					
+						guardar.label = "RECIBIR";
+						createUpdate = 3;
+					}else{
+						
+						guardar.label = "EDITAR";
+						createUpdate = 2;		
+					}						
 				}
 			}
 			
@@ -77,7 +130,7 @@
 				enabled = true;
 				dp = new ArrayCollection( event.result as Array );
 				dp.refresh();
-				editarBtn.enabled = removeBtn.enabled = selbtn.enabled = false;
+				editarBtn.enabled = recibirBtn.enabled = removeBtn.enabled = selbtn.enabled = false;
 			}
 			
 			protected function confirmDeleteCliente():void
@@ -92,21 +145,19 @@
 			}
 			
 			protected function process(event:MouseEvent):void
-			{
-				
-				if( sucursalTa.text == "" ){
+			{				
+				if( createUpdate == 1 && ubicacion.entradaSucursalId == 0 ){
 					
 					Alert.show("Los campos marcados con * son obligatorios","Error");
 					return;
 				}
-					
-				sucursal.descripcion = sucursalTa.text;
-				sucursal.direccion = direccionTa.text;
 				
 				if( createUpdate == 1 )	
-					rem.create( sucursal );										
-				else					
-					rem.update( sucursal );
+					rem.create( ubicacion );										
+				else if( createUpdate == 2 )					
+					rem.update( ubicacion );
+				else if( createUpdate == 3 )					
+					rem.recibir( ubicacion ); 
 				
 			}
 			
@@ -118,15 +169,78 @@
 			
 			protected function rcuHandler(event:ResultEvent):void
 			{
-				enabled = true;								
+				enabled = true;
+				//Si recibio el equipo cambia la sucursal del servicio
+				if( createUpdate == 3 )
+				{									
+					currentSucursalSalida = entradaTi.text;
+					currentSucursalSalidaId = ubicacion.entradaSucursalId;
+					dispatchEvent( new Event("successful") );					
+				}								
 				
-				currentState = 'options';				
-				direccionTa.text = sucursalTa.text = null;
-				editarBtn.enabled = removeBtn.enabled = selbtn.enabled = false;
-				Alert.show( 'Se realizaron los cambios correctamente',"Alerta");
-				rem.findAll();
+				currentState = 'options';
+				editarBtn.enabled = recibirBtn.enabled = removeBtn.enabled = selbtn.enabled = false;
+				Alert.show( 'Se realizaron los cambios correctamente',"Alerta");				
+				rem.findAll( servicioId );
 			}
 			
+			protected function sucursalSalidaClickHandler(event:MouseEvent):void
+			{
+				var sucursales:SucursalesCRUD = SucursalesCRUD( PopUpManager.createPopUp( this.owner, SucursalesCRUD, true ) );
+				sucursales.selMode = true;
+				sucursales.addEventListener( "itemSelected", function(event:Event):void{
+					
+					salidaTi.text = event.target.sucursales.selectedItem.descripcion;					
+					ubicacion.salidaSucursalId = event.target.sucursales.selectedItem.id;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function sucursalClickHandler(event:MouseEvent):void
+			{
+				var sucursales:SucursalesCRUD = SucursalesCRUD( PopUpManager.createPopUp( this.owner, SucursalesCRUD, true ) );
+				sucursales.selMode = true;
+				sucursales.addEventListener( "itemSelected", function(event:Event):void{
+					
+					entradaTi.text = event.target.sucursales.selectedItem.descripcion;
+					ubicacion.entradaSucursalId = event.target.sucursales.selectedItem.id;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function ordenaClickHandler(event:MouseEvent):void
+			{
+				var clientes:ClientesCRUD = ClientesCRUD( PopUpManager.createPopUp( this.owner, ClientesCRUD, true ) );
+				clientes.selMode = true;
+				clientes.addEventListener( "itemSelected", function(event:Event):void{
+					
+					ordenaTi.text = event.target.clientes.selectedItem.nombre + ' ' + event.target.clientes.selectedItem.apellidos;
+					ubicacion.ordenaId = event.target.clientes.selectedItem.id;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function recibeClickHandler(event:MouseEvent):void
+			{
+				var clientes:ClientesCRUD = ClientesCRUD( PopUpManager.createPopUp( this.owner, ClientesCRUD, true ) );
+				clientes.selMode = true;
+				clientes.addEventListener( "itemSelected", function(event:Event):void{
+					
+					recibeTi.text = event.target.clientes.selectedItem.nombre + ' ' + event.target.clientes.selectedItem.apellidos;
+					ubicacion.recibeId = event.target.clientes.selectedItem.id;
+					PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+				});
+			}
+			
+			protected function getFullName(item:Object, column:GridColumn):String
+			{				
+				switch( column.headerText ){
+					
+					case "Ordena la Salida": return item.orNombre + " " + item.orApellidos; break;
+					case "Recibe": return item.reNombre == null ? 'n/a':(item.reNombre + " " + item.reApellidos); break;
+					default: return "n/a";
+				}				
+			}
 		]]>
 	</fx:Script>
 	
@@ -136,7 +250,7 @@
 	</s:states>
 	
 	<fx:Declarations>
-		<s:RemoteObject id="rem" destination="zend" source="sucursalC" 
+		<s:RemoteObject id="rem" destination="zend" source="equipoUbicacionC" 
 						fault="faultHandler(event)" showBusyCursor="true"
 						invoke="enabled=false;">
 			
@@ -144,6 +258,7 @@
 			<s:method name="remove" result="rcuHandler(event)" />
 			<s:method name="create" result="rcuHandler(event)" />
 			<s:method name="update" result="rcuHandler(event)" />
+			<s:method name="recibir" result="rcuHandler(event)" />			
 		</s:RemoteObject>
 		
 		<s:ArrayCollection id="dp" />
@@ -152,13 +267,17 @@
 	<s:DataGrid id="ubicaciones" x="10" y="10" width="310" height="333" dataProvider="{dp}"
 				enabled="{ currentState != 'CU' }" requestedRowCount="4"
 				width.CU="215"
-				width.options="704">
+				width.options="894">
 		
 		<s:columns>
 			<s:ArrayList>
 				<s:GridColumn dataField="id" headerText="ID" width="60"></s:GridColumn>
-				<s:GridColumn dataField="descripcion" headerText="Descripcion"></s:GridColumn>
-				<s:GridColumn dataField="direccion" headerText="Direccion"></s:GridColumn>
+				<s:GridColumn dataField="saDescripcion" headerText="Sucursal de Salida"></s:GridColumn>
+				<s:GridColumn labelFunction="getFullName" headerText="Ordena la Salida"></s:GridColumn>
+				<s:GridColumn dataField="fechaOrden" headerText="Fecha de Salida"></s:GridColumn>				
+				<s:GridColumn dataField="enDescripcion" headerText="Sucursal de Entrada"></s:GridColumn>
+				<s:GridColumn labelFunction="getFullName" headerText="Recibe"></s:GridColumn>
+				<s:GridColumn dataField="fechaRecibe" headerText="Fecha de Entrada"></s:GridColumn>				
 			</s:ArrayList>
 		</s:columns>
 	</s:DataGrid>
@@ -171,13 +290,16 @@
 			  label="Editar" chromeColor="#EAE195" click="createUpdateHandler(false)"
 			  enabled="{ubicaciones.selectedIndex != -1}"
 			  icon="@Embed('assets/editar.png')"/>
+	<s:Button id="recibirBtn" includeIn="options" x="221" y="359" width="108" height="36"
+			  label="Recibir" chromeColor="#EEFFAC" click="createUpdateHandler(false, true)"
+			  enabled="{ubicaciones.selectedIndex != -1 &amp;&amp; ubicaciones.selectedItem.recibeId == 0}" icon="@Embed('assets/ubicacion_36x36.png')"/>
 	
-	<s:Button id="removeBtn" includeIn="options" x="221" y="358" width="108" height="36"
+	<s:Button id="removeBtn" includeIn="options" x="337" y="359" width="108" height="36"
 			  label="Eliminar" chromeColor="#E67373" click="confirmDeleteCliente()"
 			  enabled="{ubicaciones.selectedIndex != -1}"
 			  icon="@Embed('assets/eliminar.png')"/>
 	
-	<s:Button id="selbtn" includeIn="options" x="616" y="357" width="98" height="36"
+	<s:Button id="selbtn" includeIn="options" x="806" y="359" width="98" height="36"
 			  label="Seleccionar" chromeColor="#F6F7F7"
 			  click="{dispatchEvent( new Event('itemSelected') )}"
 			  enabled="{selMode &amp;&amp; ubicaciones.selectedIndex != -1}"/>		
@@ -186,19 +308,34 @@
 			 includeIn="CU"
 			 enabled="{ ubicaciones.selectedIndex != -1 || currentState == 'CU' }">
 		
-		<s:Label x="10" y="10" text="Descripcion *"/>
-		<s:TextArea id="sucursalTa" y="29" left="10" right="10" height="60" prompt="*"
-					text="{ sucursal.descripcion }"/>				
-		
-		<s:Label x="10" y="97" text="Direccion"/>
-		<s:TextArea id="direccionTa" y="117" left="10" right="10" height="60" 
-					text="{ sucursal.direccion }"/>
+		<s:Label x="10" y="210" text="Sucursal de Entrada"/>
+		<s:Label x="10" y="104" text="Sucursal de Salida"/>		
+		<s:TextInput id="salidaTi" y="123" left="10" right="10" click="sucursalSalidaClickHandler(event)"
+					 contentBackgroundColor="#F3FDFE" editable="false" enabled="{createUpdate == 2}"
+					 prompt="* (Click para seleccionar sucursal)"/>
+		<s:TextInput id="entradaTi" y="230" left="10" right="10" click="sucursalClickHandler(event)"
+					 contentBackgroundColor="#F3FDFE" editable="false"  enabled="{createUpdate &lt; 3}"
+					 prompt="* (Click para seleccionar sucursal)"/>		
+		<s:Label x="10" y="53" text="Ordena Salida"/>
+		<s:Label x="207" y="15" text="Entrada"/>
+		<s:Label x="10" y="156" text="Recibe Equipo"/>
+		<s:TextInput id="ordenaTi" y="72" left="10" right="10" click="ordenaClickHandler(event)"
+					 contentBackgroundColor="#F3FDFE" editable="false"
+					 prompt="(Usuario Asignado Automaticamente)"  enabled="{createUpdate == 2}"/>
+		<s:TextInput id="recibeTi" y="176" left="10" right="10" click="recibeClickHandler(event)"
+					 contentBackgroundColor="#F3FDFE" editable="false"
+					 prompt="(Usuario Asignado Automaticamente)"  enabled="{createUpdate == 2}"/>
 		
 		<s:Button id="guardar" x="253" y="293" width="98" height="30" chromeColor="#95EAC7"
 				  click="process(event)" fontWeight="bold"/>
 		
 		<s:Button id="cancelar" x="10" y="293" width="98" height="30" label="Cancelar"
-				  chromeColor="#EAE195" click="cancel(event)"/>
+				  chromeColor="#EAE195" click="cancel(event)"/>		
+		<s:Label x="10" y="15" text="Salida"/>
+		
+		<mx:DateField x="52" y="10" id="fechaOrden" enabled="{createUpdate == 2}" selectedDate="{ ubicacion.fechaOrden }"/>
+		<mx:DateField x="258" y="10" id="fechaRecibe" enabled="{createUpdate == 2}" selectedDate="{ ubicacion.fechaRecibe }"/>
+		
 	</s:Group>		
 	
 </s:TitleWindow>
