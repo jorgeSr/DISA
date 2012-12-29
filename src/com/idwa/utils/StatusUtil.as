@@ -9,6 +9,7 @@ package com.idwa.utils
 		public static var PRESUPUESTADO:String = "PREP";
 		public static var ESPERA_REFAC:String = "EREF";
 		public static var REFAC_RECIB:String = "RREF";
+		public static var REPARADO:String = "REPA";		
 		public static var APROV_CALIDAD:String = "ACAL";
 		public static var RECHA_CALIDAD:String = "RCAL";
 		public static var LISTO_RECOLECCION:String = "LREC";
@@ -22,7 +23,8 @@ package com.idwa.utils
 				case StatusUtil.DIAGNOSTICADO: return "Diagnosticado"; break;				
 				case StatusUtil.PRESUPUESTADO: return "Presupuestado"; break;
 				case StatusUtil.ESPERA_REFAC: return "En Espera de Refacciones"; break;				
-				case StatusUtil.REFAC_RECIB: return "Refaccioens Recibidas"; break;				
+				case StatusUtil.REFAC_RECIB: return "Refaccioens Recibidas"; break;
+				case StatusUtil.REPARADO: return "Reparado"; break;
 				case StatusUtil.APROV_CALIDAD: return "Aprovado por Calidad"; break;
 				case StatusUtil.RECHA_CALIDAD: return "Rechazado por Calidad"; break;
 				case StatusUtil.LISTO_RECOLECCION: return "Listo para Recolección"; break;

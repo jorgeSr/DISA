@@ -27,6 +27,7 @@
 			import com.idwa.ds.disa.vo.detail.ServicioDetail;
 			import com.idwa.exceptions.ZendExceptios;
 			import com.idwa.utils.DateUtil;
+			import com.idwa.utils.StatusUtil;
 			
 			import mx.controls.Alert;
 			import mx.core.IFlexDisplayObject;
@@ -161,6 +162,11 @@
 				}				
 			}
 			
+			protected function getStatusDesc(item:Object, column:AdvancedDataGridColumn):String
+			{
+				return StatusUtil.getStatusLabel( item.stStatus as String );
+			}			
+			
 			protected function gotoDetalle(event:MouseEvent):void
 			{
 				currentState = ( currentState == "detalle" ? "contraido":"detalle" );
@@ -288,7 +294,7 @@
 				<mx:AdvancedDataGridColumn  headerText="Sucursal" dataField="suDescripcion" />
 			</mx:AdvancedDataGridColumnGroup>
 			<mx:AdvancedDataGridColumnGroup headerText="Status" >
-				<mx:AdvancedDataGridColumn  headerText="Status" dataField="stStatus" />
+				<mx:AdvancedDataGridColumn  headerText="Status" dataField="stStatus" labelFunction="getStatusDesc" />
 				<mx:AdvancedDataGridColumn  headerText="Fecha" dataField="stFecha" />
 			</mx:AdvancedDataGridColumnGroup>
 		</mx:groupedColumns>

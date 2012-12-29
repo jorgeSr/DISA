@@ -209,7 +209,6 @@
 				clienteSearch.apellidos = apellidosBTi.text;
 				clienteSearch.email = emailBTi.text;
 				clienteSearch.tipo = int(tipoBdd.selectedItem.value);
-				clienteSearch.active = activeBCB.selected;
 				
 				remC.search( clienteSearch );
 			}
@@ -376,8 +375,6 @@
 		<s:Button id="limpiar" x="10" y="295" width="30" height="30" label="Cancelar"
 				  chromeColor="#EAE195" icon="@Embed('assets/eliminar.png')" toolTip="Limpiar Filtro"
 				  click="limpiar_clickHandler(event)"/>
-		<s:CheckBox id="activeBCB" x="10" y="250" label="activo" enabled="true"
-					selected="true"/>
 	</s:Group>
 	 
 	<s:Button includeIn="options" x="10" y="10" height="22" label="Buscar &gt;&gt;" chromeColor="#F7F7F7"

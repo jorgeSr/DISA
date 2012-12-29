@@ -26,6 +26,7 @@
 			import com.idwa.ds.disa.vo.detail.ServicioDetail;
 			import com.idwa.exceptions.ZendExceptios;
 			import com.idwa.utils.DateUtil;
+			import com.idwa.utils.StatusUtil;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
@@ -137,6 +138,11 @@
 				rem.findByServicioId(servicio.id);
 			}
 			
+			protected function getStatusDesc(item:Object, column:GridColumn):String
+			{
+				return StatusUtil.getStatusLabel( item.stStatus as String );
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -168,7 +174,7 @@
 			<s:ArrayList>
 				<s:GridColumn dataField="fecha" headerText="Fecha" width="130"></s:GridColumn>
 				<s:GridColumn dataField="titulo" headerText="Titulo"></s:GridColumn>
-				<s:GridColumn dataField="stStatus" headerText="Status"></s:GridColumn>
+				<s:GridColumn dataField="stStatus" labelFunction="getStatusDesc" headerText="Status"></s:GridColumn>
 			</s:ArrayList>
 		</s:columns>
 	</s:DataGrid>
