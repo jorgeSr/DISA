@@ -211,10 +211,12 @@
 			protected function status_clickHandler(event:MouseEvent):void
 			{
 				var status:StatusCRUD = StatusCRUD( PopUpManager.createPopUp( this, StatusCRUD, true ) );
+				status.setData( servicios.selectedItem.id );
 				status.addEventListener( "successful", function(event:Event):void{
 					
 					//Cambia el status actual en el servicio seleccionado
-					//PopUpManager.removePopUp( event.target as IFlexDisplayObject );
+					servicios.selectedItem.status = event.target.status.status;
+					dp.refresh();
 				});
 			}
 			
@@ -226,6 +228,7 @@
 					
 					servicios.selectedItem.suDescripcion = event.target.currentSucursalSalida;
 					servicios.selectedItem.sucursalId = event.target.currentSucursalSalidaId;
+					dp.refresh();
 				});
 			}
 			

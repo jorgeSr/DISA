@@ -4,12 +4,12 @@
 			   xmlns:mx="library://ns.adobe.com/flex/mx"
 			   width="606" height="466" close="PopUpManager.removePopUp(this);"
 			   creationComplete="creationCompleteHandler(event)" title="Sucursales"
-			   height.CU="390"
-			   width.options="726" height.options="444" title.options="Status">
+			   width.CU="638" height.CU="444"
+			   width.options="916" height.options="444" title.options="Status">
 	
 	<s:transitions> 
 		<s:Transition id="tran" fromState="*" toState="*" > 
-			<s:Sequence id="t1" targets="{[detalle, sucursales]}"> 
+			<s:Sequence id="t1" targets="{[detalle, statuss]}"> 
 				<mx:Blur duration="100" blurXFrom="0.0" blurXTo="10.0" />
 				<mx:Parallel>
 					<mx:Move duration="150"/>
@@ -23,8 +23,10 @@
 	<fx:Script>
 		
 		<![CDATA[			
-			import com.idwa.ds.disa.vo.Sucursal;
+			import com.idwa.ds.disa.vo.Status;
 			import com.idwa.exceptions.ZendExceptios;
+			import com.idwa.utils.DateUtil;
+			import com.idwa.utils.StatusUtil;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
@@ -37,16 +39,23 @@
 			[Bindable]
 			public var selMode:Boolean = false;
 			[Bindable]
-			public var sucursal:Sucursal = new Sucursal();
+			public var status:Status = new Status();
+			public var servicioId:int;
 			
 			//0:default, 1:create, 2:update
+			[Bindable]
 			public var createUpdate:int = 0; 
 			
 			protected function creationCompleteHandler(event:FlexEvent):void
 			{
 				PopUpManager.centerPopUp(this);
-				rem.findAll();
 			}						
+			
+			public function setData( sid:int ):void
+			{				
+				servicioId = sid;
+				rem.findAll( servicioId );
+			}
 			
 			protected function faultHandler(event:FaultEvent):void
 			{				
@@ -57,16 +66,33 @@
 			protected function createUpdateHandler(nuevo:Boolean):void
 			{
 				currentState = "CU";
+				status = new Status();
+				status.servicioId = servicioId;
 				
 				if( nuevo ){
-					
-					sucursal = new Sucursal();
+										
 					guardar.label = "CREAR";
 					createUpdate = 1;
+					presupuestoTa.text = null;
+					statusServicioDD.selectedIndex = -1;
 					
 				}else{
 					
-					sucursal = sucursales.selectedItem as Sucursal;					
+					var dUtil:DateUtil = new DateUtil();
+					status.id = statuss.selectedItem.id;
+					status.descripcion = statuss.selectedItem.descripcion;
+					status.fecha = dUtil.parseDate( statuss.selectedItem.fecha );
+					status.presupuesto = statuss.selectedItem.presupuesto;
+					status.status = statuss.selectedItem.status;
+					status.usuarioId = statuss.selectedItem.usuarioId;
+					
+					statusServicioDD.selectedIndex = -1;
+					for( var i:int; i < statusOpt.length; i++ )
+					{
+						if( status.status == statusOpt[i].value )
+							statusServicioDD.selectedIndex = i;
+					}
+					
 					guardar.label = "EDITAR";
 					createUpdate = 2;
 				}
@@ -87,26 +113,34 @@
 					Alert.OK|Alert.CANCEL,this, 
 					function(event:CloseEvent):void{
 						if(event.detail==Alert.OK)	
-							rem.remove( sucursales.selectedItem.id );
+							rem.remove( statuss.selectedItem.id );
 					},null,Alert.OK);
 			}
 			
 			protected function process(event:MouseEvent):void
 			{
-				
-				if( sucursalTa.text == "" ){
+				//verfy number integry as money
+				if( statusServicioDD.selectedIndex == -1 ){
 					
-					Alert.show("Los campos marcados con * son obligatorios","Error");
+					Alert.show("Debe elegir el estatus al cual desea cambiar el servicio","Error");
+					return;
+				}
+				
+				if( createUpdate == 1 && fecha.selectedDate == null )
+				{
+					Alert.show("Debe espeificar la fecha","Error");
 					return;
 				}
 					
-				sucursal.descripcion = sucursalTa.text;
-				sucursal.direccion = direccionTa.text;
+					
+				status.presupuesto = Number( presupuestoTa.text );
+				status.descripcion = descripcionTa.text;
+				status.fecha = fecha.selectedDate;
 				
 				if( createUpdate == 1 )	
-					rem.create( sucursal );										
+					rem.create( status );										
 				else					
-					rem.update( sucursal );
+					rem.update( status );
 				
 			}
 			
@@ -118,13 +152,32 @@
 			
 			protected function rcuHandler(event:ResultEvent):void
 			{
-				enabled = true;								
-				
+				enabled = true;
+				if( createUpdate == 2 )
+					dispatchEvent( new Event('successful') );
 				currentState = 'options';				
-				direccionTa.text = sucursalTa.text = null;
+				presupuestoTa.text = descripcionTa.text = null;
+				fecha.selectedDate = null;
 				editarBtn.enabled = removeBtn.enabled = selbtn.enabled = false;
+				statusServicioDD.selectedIndex = -1;
 				Alert.show( 'Se realizaron los cambios correctamente',"Alerta");
-				rem.findAll();
+
+				rem.findAll( servicioId );				
+			}
+			
+			protected function getFullName(item:Object, column:GridColumn):String
+			{		
+				return item.usNombre + " " + item.usApellidos;				
+			}
+			
+			protected function getPresupuesto(item:Object, column:GridColumn):String
+			{
+				return ( item.presupuesto == null ? "n/a":( item.status == "PREP" ? item.presupuesto:"n/a" ) );
+			}
+			
+			protected function getStatusLabel(item:Object, column:GridColumn):String
+			{
+				return StatusUtil.getStatusLabel( item.status );
 			}
 			
 		]]>
@@ -136,7 +189,7 @@
 	</s:states>
 	
 	<fx:Declarations>
-		<s:RemoteObject id="rem" destination="zend" source="sucursalC" 
+		<s:RemoteObject id="rem" destination="zend" source="statusC" 
 						fault="faultHandler(event)" showBusyCursor="true"
 						invoke="enabled=false;">
 			
@@ -147,18 +200,31 @@
 		</s:RemoteObject>
 		
 		<s:ArrayCollection id="dp" />
+		
+		<s:ArrayCollection id="statusOpt" >
+			<fx:Object name="Recibido" value="RECI" />
+			<fx:Object name="Diagnosticado" value="DIAG" />
+			<fx:Object name="Presupuestado" value="PREP" />
+			<fx:Object name="En Espera de Refacciones" value="EREF" />			
+			<fx:Object name="Refacciones Recibidas" value="RREF" />
+			<fx:Object name="Aprovado por Calidad" value="ACAL" />
+			<fx:Object name="Rechazado por Calidad" value="RCAL" />
+			<fx:Object name="Listo pata Recolección" value="LREC" />
+			<fx:Object name="Terminado" value="TERM" />
+		</s:ArrayCollection>
 	</fx:Declarations>	
 	
-	<s:DataGrid id="sucursales" x="10" y="10" width="310" height="333" dataProvider="{dp}"
+	<s:DataGrid id="statuss" x="10" y="10" width="310" height="333" dataProvider="{dp}"
 				enabled="{ currentState != 'CU' }" requestedRowCount="4"
-				width.CU="215"
-				width.options="704">
+				width.CU="215" height.CU="391"
+				width.options="603">
 		
 		<s:columns>
 			<s:ArrayList>
-				<s:GridColumn dataField="id" headerText="ID" width="60"></s:GridColumn>
-				<s:GridColumn dataField="descripcion" headerText="Descripcion"></s:GridColumn>
-				<s:GridColumn dataField="direccion" headerText="Direccion"></s:GridColumn>
+				<s:GridColumn labelFunction="getFullName" dataField="usNombre" headerText="Usuario"></s:GridColumn>
+				<s:GridColumn labelFunction="getStatusLabel" dataField="status" headerText="Status"></s:GridColumn>
+				<s:GridColumn dataField="fecha" headerText="Fecha"></s:GridColumn>
+				<s:GridColumn labelFunction="getPresupuesto" headerText="Presupuesto"></s:GridColumn>
 			</s:ArrayList>
 		</s:columns>
 	</s:DataGrid>
@@ -169,36 +235,48 @@
 	
 	<s:Button id="editarBtn" includeIn="options" x="115" y="358" width="98" height="36"
 			  label="Editar" chromeColor="#EAE195" click="createUpdateHandler(false)"
-			  enabled="{sucursales.selectedIndex != -1}"
+			  enabled="{statuss.selectedIndex != -1}"
 			  icon="@Embed('assets/editar.png')"/>
 	
 	<s:Button id="removeBtn" includeIn="options" x="221" y="358" width="108" height="36"
 			  label="Eliminar" chromeColor="#E67373" click="confirmDeleteCliente()"
-			  enabled="{sucursales.selectedIndex != -1}"
+			  enabled="{statuss.selectedIndex != -1}"
 			  icon="@Embed('assets/eliminar.png')"/>
 	
-	<s:Button id="selbtn" includeIn="options" x="616" y="357" width="98" height="36"
+	<s:Button id="selbtn" includeIn="options" x="804" y="365" width="98" height="36"
 			  label="Seleccionar" chromeColor="#F6F7F7"
 			  click="{dispatchEvent( new Event('itemSelected') )}"
-			  enabled="{selMode &amp;&amp; sucursales.selectedIndex != -1}"/>		
+			  enabled="{selMode &amp;&amp; statuss.selectedIndex != -1}"/>		
 	
-	<s:Group id="detalle" x="233" y="10" width="361" height="333"
+	<s:Group id="detalle" x="233" y="10" width="393" height="391"
 			 includeIn="CU"
-			 enabled="{ sucursales.selectedIndex != -1 || currentState == 'CU' }">
+			 enabled="{ statuss.selectedIndex != -1 || currentState == 'CU' }">
 		
-		<s:Label x="10" y="10" text="Descripcion *"/>
-		<s:TextArea id="sucursalTa" y="29" left="10" right="10" height="60" prompt="*"
-					text="{ sucursal.descripcion }"/>				
+		<s:Label x="10" y="60" text="Presupuesto *"/>
+		<s:TextInput id="presupuestoTa" y="79" left="10" right="10" 
+					 prompt="{ statusServicioDD.selectedItem.value != 'PREP' ? 'Solo para status presupuesto':'*Necesrio'}" 
+					 restrict="[0-9,.]"
+					 text="{ status.presupuesto }" enabled="{ statusServicioDD.selectedItem.value == 'PREP' }" />				
 		
-		<s:Label x="10" y="97" text="Direccion"/>
-		<s:TextArea id="direccionTa" y="117" left="10" right="10" height="60" 
-					text="{ sucursal.direccion }"/>
+		<s:Label x="10" y="109" text="Notas"/>
+		<s:TextArea id="descripcionTa" y="129" left="10" right="10" height="188" 
+					text="{ status.descripcion }"  />
 		
-		<s:Button id="guardar" x="253" y="293" width="98" height="30" chromeColor="#95EAC7"
+		<s:Button id="guardar" x="285" y="351" width="98" height="30" chromeColor="#95EAC7"
 				  click="process(event)" fontWeight="bold"/>
 		
-		<s:Button id="cancelar" x="10" y="293" width="98" height="30" label="Cancelar"
+		<s:Button id="cancelar" x="10" y="351" width="98" height="30" label="Cancelar"
 				  chromeColor="#EAE195" click="cancel(event)"/>
+		<s:DropDownList id="statusServicioDD" y="30" left="10" right="144"
+						change="{status.status = statusServicioDD.selectedItem.value; presupuestoTa.text = null}"
+						dataProvider="{statusOpt}" labelField="name" selectedIndex="0" />
+		<s:Label x="10" y="10" fontWeight="bold" text="Status"/>
+		<s:Label x="290" y="10" fontWeight="bold" text="Status"/>
+		<mx:DateField id="fecha" x="290" y="29" enabled="{createUpdate == 2}"
+					  selectedDate="{status.fecha}" />
 	</s:Group>		
+	<s:TextArea includeIn="options" x="621" y="30" width="281" height="313" editable="false"
+				text="{statuss.selectedItem.descripcion}"/>
+	<s:Label includeIn="options" x="621" y="10" fontWeight="bold" text="Notas"/>
 	
 </s:TitleWindow>
