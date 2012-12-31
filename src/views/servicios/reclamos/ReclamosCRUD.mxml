@@ -111,8 +111,8 @@
 					return;
 				}
 					
-				reporte.descripcion = tituloTa.text;
-				reporte.titulo = descripcionTa.text;
+				reporte.titulo = tituloTa.text;
+				reporte.descripcion = descripcionTa.text;
 				
 				if( createUpdate == 1 )	
 					rem.create( reporte );										
